@@ -49,13 +49,13 @@ function Login() {
   };
   return (
     <main>
-      <h1>Ironsworn</h1>
-      <form onSubmit={send} className="login">
+      <form onSubmit={send} className="login card">
+        <h1 className="brand">Ironsworn<small>Giuriamo sul ferro. Paghiamo il prezzo.</small></h1>
         <label>Nome <input required autoComplete="username" value={nome} onChange={(e) => setNome(e.target.value)} /></label>
         <label>Password <input type="password" required minLength={6} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button>Entra</button>
+        <p role="status" className="muted small-text">{state}</p>
       </form>
-      <p role="status">{state}</p>
     </main>
   );
 }
