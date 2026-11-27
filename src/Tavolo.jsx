@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import Lightbox from './Lightbox.jsx';
+import { Info } from './Layer.jsx';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
-import { MOVE_TEXTS, FINISH_TEXTS, TABLES } from './rules/texts.js';
+import { MOVE_TEXTS, FINISH_TEXTS, TABLES, TABLE_INFO } from './rules/texts.js';
 import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress, setThreat } from './rules/progress.js';
 import { trackText } from './rules/diario.js';
 
@@ -176,7 +177,10 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
       <h2 className="section-title">Fai una mossa</h2>
       <SceneBar scene={scene} sceneVow={sceneVow} tracks={tracks} onSave={act.saveParty} onNew={act.newScene} />
       <p className="label">Mossa</p>
-      <div className="chips">{ACTION_MOVES.map((m) => <button key={m.name} className="chip" aria-pressed={m.name === move} onClick={() => pickMove(m.name)}>{m.name}</button>)}</div>
+      <div className="chips">{ACTION_MOVES.map((m) => (
+        <span key={m.name} className="with-info"><button className="chip" aria-pressed={m.name === move} onClick={() => pickMove(m.name)}>{m.name}</button>
+          <Info title={m.name}><MoveInfo move={m} /></Info></span>
+      ))}</div>
       <div className="cols">
         <div>
           <p className="label">Statistica</p>
@@ -201,6 +205,22 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
       {!phase && current && !current.result.pending && current.id !== closed && <Result onClose={() => setClosed(current.id)} row={current} mine={current.user_id === uid} me={me} sceneVow={sceneVow} tracks={tracks} rolls={rolls} act={act} />}
     </section>
   );
+}
+
+// Tutto il testo di una mossa: statistiche ammesse e i tre esiti con le scelte.
+function MoveInfo({ move }) {
+  const texts = MOVE_TEXTS[move.name];
+  return <>
+    <p className="muted small-text">Si tira con: {move.stats.map((k) => STATS[k]).join(', ')}</p>
+    {['strong', 'weak', 'miss'].map((o) => (
+      <div key={o} className="stack group">
+        <p className={`outcome ${o}`}>{OUTCOMES[o]}</p>
+        <p>{texts[o].text}</p>
+        {texts[o].options && <><p className="label">{texts[o].pick === 'tutte' ? 'Ottieni' : texts[o].pick}</p>
+          <ul className="info-list">{texts[o].options.map(([label]) => <li key={label}>{label}</li>)}</ul></>}
+      </div>
+    ))}
+  </>;
 }
 
 function Pending({ row, mine, onChallenge }) {
@@ -412,7 +432,8 @@ export function Oracolo({ rolls, me, act }) {
       <section>
         <h2 className="section-title">Tabelle</h2>
         <div className="row">{Object.keys(TABLES).map((name) => (
-          <button key={name} className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
+          <span key={name} className="with-info"><button className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
+            <Info title={name}>{TABLE_INFO[name].map(([col, rows]) => <div key={col} className="stack"><p className="label">{col}</p><ol className="info-list">{rows.map((r) => <li key={r}>{r}</li>)}</ol></div>)}</Info></span>
         ))}</div>
         {lastTable && (
           <div className="answer">
