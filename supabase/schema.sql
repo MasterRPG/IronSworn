@@ -12,6 +12,9 @@ create table public.rolls (
 
 alter table public.rolls enable row level security;
 
+-- I progetti Supabase nuovi non danno più i permessi da soli: senza questa riga, "permission denied for table rolls".
+grant select, insert on public.rolls to authenticated;
+
 -- shortcut: un solo tavolo per tutti gli utenti registrati; aggiungere i tavoli quando servono più gruppi.
 create policy "chi è registrato legge i tiri" on public.rolls
   for select to authenticated using (true);
