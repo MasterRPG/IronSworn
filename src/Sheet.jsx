@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ASSET_TYPES, LIMITS, clamp, effectiveStats } from './rules/character.js';
+import { completeClocks } from './rules/progress.js';
+import { Boxes } from './Tavolo.jsx';
 
 // Campo di testo che salva quando lo lasci, non a ogni tasto.
 export function Text({ value, onSave, area, ...rest }) {
@@ -121,7 +123,7 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
           <p className="label">Asset <span className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>(nessun limite)</span></p>
           {c.asset.map((a, i) => (
             <div key={i} className={`item${statoOf(a) !== 'OK' ? ' broken' : ''}`}>
-              <div className="row"><span className="tag">{a.tipo}</span><b className="grow">{a.testo}</b><span className={`state s-${statoOf(a)}`}>{statoOf(a)}</span></div>
+              <div className="row"><span className="tag">{a.tipo}</span><span className="grow asset-text">{a.testo}</span><span className={`state s-${statoOf(a)}`}>{statoOf(a)}</span></div>
               {a.nota && <p className="muted small-text">{a.nota}</p>}
               {ed && ask !== `a${i}` && (
                 <div className="row small-text">
@@ -150,7 +152,7 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
           <p className="label">Legami</p>
           {legami.map((l, i) => (
             <div key={i} className="item">
-              <div><b>{l.con || '—'}</b> <span>{l.testo}</span></div>
+              <div>{l.con && <b>{l.con}: </b>}<span>{l.testo}</span></div>
               {ed && ask !== `l${i}` && <div className="row small-text"><span className="grow" /><button className="link" onClick={() => setBondForm({ i, ...l })}>Modifica</button><button className="link danger" onClick={() => setAsk(`l${i}`)}>Elimina</button></div>}
               {ask === `l${i}` && <Confirm text={`Eliminare il legame${l.con ? ` con ${l.con}` : ''}?`} onNo={() => setAsk(null)} onYes={() => { set({ legami: legami.filter((_, j) => j !== i) }); setAsk(null); }} />}
             </div>
@@ -167,7 +169,11 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
         </div>
         <div className="block">
           <p className="label">Voto personale</p>
-          <p>{vow ? <>{vow.nome} <span className="muted small-text">· {vow.grado}{vow.ferro ? ` · giurato su ${vow.ferro}` : ''}</span></> : <span className="muted">Nessuno: si giura da "Voti".</span>}</p>
+          {vow ? <>
+            <p>{vow.nome} <span className="muted small-text">· {vow.grado}{vow.ferro ? ` · giurato su ${vow.ferro}` : ''}</span></p>
+            <Boxes segmenti={vow.segmenti} />
+            <p className="muted small-text">{completeClocks(vow.segmenti)} orologi completi su 10 · il progresso si segna da "Voti"</p>
+          </> : <p className="muted">Nessuno: si giura da "Voti".</p>}
         </div>
         {ed && onArchive && !c.archiviato && (
           <button type="button" className="link danger" onClick={() => confirm(`Archiviare ${c.nome || 'questo personaggio'}?\n\nUsalo per morte o ritiro: il personaggio esce dal gioco e finisce tra gli archiviati, in sola lettura. Potrai riportarlo in gioco.`) && onArchive()}>
