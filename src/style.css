@@ -139,7 +139,9 @@ label.col { flex-direction: column; align-items: stretch; }
 
 /* Luoghi e minacce */
 .page-text { white-space: pre-wrap; margin: 10px 0 14px; }
-.login { max-width: 360px; margin-top: 24px; }
+.login { max-width: 380px; margin: 12vh auto 0; display: grid; gap: 4px; }
+.login .brand { margin-bottom: 12px; }
+.login button { margin-top: 8px; }
 
 /* Schede come nel mockup */
 .sheet-cols { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
