@@ -104,7 +104,9 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 @media (max-width: 1100px) { .table-grid { grid-template-columns: minmax(0, 1fr) 320px; } .table-grid > .party-col { grid-column: 1 / -1; } .party-col .stack { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
 @media (max-width: 760px) { .table-grid { grid-template-columns: minmax(0, 1fr); } }
 .pc.mine { border-color: var(--accent); }
-.pc-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.pc-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line2); }
+.portrait { width: 100%; max-width: 160px; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 .pc-stats { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); color: var(--muted); }
 .pc-stats b { color: var(--fg); }
 .scorte { display: flex; align-items: center; gap: var(--sp-2); }

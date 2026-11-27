@@ -80,7 +80,7 @@ function Party({ chars, uid, scorte, onScorte }) {
           const marks = (l) => l.filter((s) => s.trim()).length;
           return (
             <div key={id} className={`pc${owner === uid ? ' mine' : ''}`}>
-              <div className="pc-head"><b>{c.nome}</b><span className="muted small-text">{c.giocatore}</span></div>
+              <div className="pc-head">{c.immagine && <img className="avatar" src={c.immagine} alt="" />}<b className="grow">{c.nome}</b><span className="muted small-text">{c.giocatore}</span></div>
               <div className="pc-stats"><span>Fisico <b>{eff.fisico}</b></span><span>Animo <b>{eff.animo}</b></span><span>Ingegno <b>{eff.ingegno}</b></span></div>
               <div className="meter"><span>Salute</span><Segs n={c.salute} /><span>{c.salute}/6</span></div>
               <div className="meter"><span>Spirito</span><Segs n={c.spirito} /><span>{c.spirito}/6</span></div>
