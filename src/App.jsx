@@ -147,6 +147,13 @@ function Table({ session }) {
     const { error } = await supabase.from('pages').delete().eq('id', id);
     if (error) setError(error.message);
   };
+  // Foto o disegno di una nota: file nello Storage, indirizzo pubblico nella pagina.
+  const uploadImage = async (file) => {
+    const path = `${crypto.randomUUID()}.${file.type === 'image/png' ? 'png' : file.name?.split('.').pop() || 'jpg'}`;
+    const { error } = await supabase.storage.from('note').upload(path, file, { contentType: file.type });
+    if (error) { setError(error.message); return null; }
+    return supabase.storage.from('note').getPublicUrl(path).data.publicUrl;
+  };
   const finish = (t) => {
     save(`Portare a termine: ${t.nome}`, { kind: 'progress', pending: true, clocks: completeClocks(t.segmenti), trackId: t.id });
     setTab('tavolo');
@@ -196,7 +203,7 @@ function Table({ session }) {
         </div>
       </header>
       <nav className="tabs" aria-label="Sezioni">
-        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['mondo', 'Il mondo']].map(([k, label]) => (
+        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['mondo', 'Il mondo'], ['note', 'Note']].map(([k, label]) => (
           <button key={k} className={tab === k ? 'active' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{label}</button>
         ))}
       </nav>
@@ -208,6 +215,7 @@ function Table({ session }) {
         <Pages pages={pages} groups={[['luogo', 'Luoghi', '+ Nuovo luogo'], ['png', 'PNG', '+ Nuovo PNG']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} />
         <Threats tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} />
       </div>}
+      {tab === 'note' && <Pages pages={pages} groups={[['nota', 'Note', '+ Nuova nota']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} onUpload={uploadImage} />}
       {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
     </main>
   );

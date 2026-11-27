@@ -207,3 +207,14 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 .item.broken .asset-text { text-decoration: line-through; color: var(--muted); }
 .state { font-size: var(--fs-xs); } .s-Rotto { color: var(--weak); } .s-Perso { color: var(--miss); } .s-OK { color: var(--online); }
 fieldset.plain { border: 0; padding: 0; min-width: 0; }
+
+/* Note: foto e disegni */
+.gallery { display: grid; gap: var(--sp-2); grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+.gallery figure { margin: 0; display: grid; gap: var(--sp-1); justify-items: start; }
+.gallery a { display: block; width: 100%; }
+.gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.drop { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; padding: var(--sp-3); border: 1px dashed var(--line2); border-radius: 8px; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.sketch { width: 100%; max-width: 800px; aspect-ratio: 5 / 3; border-radius: 8px; border: 1px solid var(--line); touch-action: none; cursor: crosshair; }
+.swatch { width: 32px; padding: 0; background: var(--ink); }
+.swatch[aria-pressed=true] { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--ink); }
