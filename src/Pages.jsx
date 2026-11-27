@@ -144,7 +144,10 @@ export function Threats({ tracks, onTrack, onNewVow }) {
       {threats.map((t) => (
         <div key={t.id} className="item">
           <p className="vow-title">{t.minaccia}</p>
-          <div className="meter"><span>Minaccia</span><Segs n={t.minaccia_segmenti} threat /><span>{t.minaccia_segmenti}/6</span></div>
+          <div className="meter"><span>Minaccia</span><Segs n={t.minaccia_segmenti} threat /><span>{t.minaccia_segmenti}/6</span>
+            <span className="row push"><button className="ghost small" aria-label={`Abbassa la minaccia ${t.minaccia}`} onClick={() => onTrack(t.id, { minaccia_segmenti: t.minaccia_segmenti - 1 })} disabled={t.minaccia_segmenti <= 0}>−</button>
+              <button className="ghost small" aria-label={`Avanza la minaccia ${t.minaccia}`} onClick={() => onTrack(t.id, { minaccia_segmenti: t.minaccia_segmenti + 1 })} disabled={t.minaccia_segmenti >= 6}>+</button></span></div>
+          {t.minaccia_segmenti >= 6 && <p className="warn">La minaccia si compie: raccontatela, poi alzate il grado del voto o rinunciate.</p>}
           <p className="muted small-text">Legata al voto: {t.nome}</p>
         </div>
       ))}
