@@ -206,23 +206,21 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
   const burnRow = rolls.find((x) => x.result.kind === 'burn' && x.result.of === row.id);
   const outcome = burnRow ? burnRow.result.outcome : r.outcome;
   const track = r.kind === 'progress' ? tracks.find((t) => t.id === r.trackId) : null;
-  const text = r.kind === 'action' ? MOVE_TEXTS[row.move]?.[outcome] : FINISH_TEXTS[track?.tipo ?? 'voto'][outcome];
+  const entry = r.kind === 'action' ? MOVE_TEXTS[row.move]?.[outcome] : { text: FINISH_TEXTS[track?.tipo ?? 'voto'][outcome] };
   const [done, setDone] = useState([]);
-  const apply = (label, fx, extra = '') => { fx(); act.note(`${me.data.nome}: ${label}${extra}`); setDone([...done, label]); };
   const c = me?.data;
-  const setC = (patch) => act.saveChar(me.id, { ...c, ...patch });
   const noGain = c && (c.salute >= 4 || c.spirito >= 4);
-  const options = !mine || !me || r.kind !== 'action' ? [] : outcome === 'strong' ? [
-    ['+1 slancio', () => setC({ slancio: clamp(c.slancio + 1, LIMITS.slancio) }), noGain],
-  ] : outcome === 'weak' ? [
-    ['Paga: −1 slancio', () => setC({ slancio: clamp(c.slancio - 1, LIMITS.slancio) })],
-    ['Paga: −1 Scorte', () => act.saveParty({ scorte: clamp(act.scorte - 1, LIMITS.scorte) })],
-    ['Paga: 1 danno a Salute', () => setC({ salute: clamp(c.salute + 1, LIMITS.clock) })],
-  ] : [
-    ['Pagare il prezzo (tira la tabella)', null],
-    ['Subire una perdita: 2 a Salute', () => setC({ salute: clamp(c.salute + 2, LIMITS.clock) })],
-    ['Subire una perdita: 2 a Spirito', () => setC({ spirito: clamp(c.spirito + 2, LIMITS.clock) })],
-  ];
+  const canApply = mine && me && r.kind === 'action';
+  const apply = (label, fx) => {
+    let extra = '';
+    if (fx === 'prezzo') { const t = TABLES['Pagare il prezzo'](d); extra = `, ${t.dice}: ${t.text}`; } else {
+      const patch = {};
+      for (const [k, v] of Object.entries(fx)) if (k !== 'scorte') patch[k] = clamp(c[k] + v, k === 'slancio' ? LIMITS.slancio : LIMITS.clock);
+      if (Object.keys(patch).length) act.saveChar(me.id, { ...c, ...patch });
+      if (fx.scorte) act.saveParty({ scorte: clamp(act.scorte + fx.scorte, LIMITS.scorte) });
+    }
+    act.note(`${me.data.nome}: ${label}${extra}`); setDone([...done, label]);
+  };
   // Nella scena di un voto: fallimento → avanza la minaccia, successo pieno → tappa. Sempre su conferma.
   const [asked, setAsked] = useState(false);
   const offer = mine && sceneVow && r.kind === 'action' && !asked && (
@@ -244,15 +242,23 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
       </div>
       {r.kind === 'action' && r.d6Value !== r.d6 && <p className="muted small-text">Slancio negativo: il d6 ha fatto {r.d6} e vale 0.</p>}
       <p className={`outcome ${outcome}`}>{OUTCOMES[outcome]}{burnRow && <span className="muted small-text"> (con lo slancio)</span>}</p>
-      {text && <p>{text}</p>}
+      {entry?.text && <p>{entry.text}</p>}
       {r.match && <p className="muted small-text">Doppio: {outcome === 'miss' ? 'la situazione peggiora parecchio.' : 'un risultato migliore del previsto.'}</p>}
-      {mine && r.burn && !burnRow && (
+      {mine && r.burn && !burnRow && r.outcome !== 'strong' && (
         <div className="offer">
           <span>Usa lo slancio ({signed(r.momentum)}) al posto del tiro appena fatto: si confronta con i dadi sfida, poi lo slancio torna a +2.</span>
           <button className="small" onClick={() => act.burn(row)}>Usa lo slancio</button>
         </div>
       )}
       {burnRow && <p className="small-text">Slancio {signed(r.momentum)} contro i dadi sfida: {burnRow.result.outcome === r.outcome ? `il risultato resta ${OUTCOMES[r.outcome]}` : `da ${OUTCOMES[r.outcome]} diventa ${OUTCOMES[burnRow.result.outcome]}`}. Slancio tornato a +2.</p>}
+      {entry?.options && <>
+        <p className="label">{entry.pick === 'tutte' ? 'Ottieni' : entry.pick}</p>
+        <ul className="choices">{entry.options.map(([label, fx]) => (
+          <li key={label}><span className="grow">{label}</span>
+            {canApply && fx && <button className="ghost small" disabled={done.includes(label) || (noGain && fx.slancio > 0)} onClick={() => apply(label, fx)}>{done.includes(label) ? 'Segnato ✓' : fx === 'prezzo' ? 'Tira' : 'Segna sulla scheda'}</button>}</li>
+        ))}</ul>
+        {canApply && noGain && entry.options.some(([, fx]) => fx?.slancio > 0) && <p className="warn">Salute o Spirito a 4 o più: non puoi guadagnare slancio.</p>}
+      </>}
       {offer === 'threat' && (
         <div className="offer">
           <span>Fallimento in una scena del voto. <b>Avanzo la minaccia "{sceneVow.minaccia || sceneVow.nome}"?</b> ({sceneVow.minaccia_segmenti}/6)</span>
@@ -267,16 +273,6 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
           <button className="small" onClick={() => { act.saveTrack(sceneVow.id, { segmenti: markProgress(sceneVow.segmenti, sceneVow.grado) }); setAsked(true); }}>Sì, segna</button>
         </div>
       )}
-      {options.length > 0 && <>
-        <p className="label">Conseguenze del tiro</p>
-        <p className="muted small-text">Scegli cosa ottieni o paghi: il pulsante lo segna sulla tua scheda.</p>
-        <div className="row">{options.map(([label, fx, off]) => (
-          <button key={label} className="ghost small" disabled={off || done.includes(label)}
-            onClick={() => (fx ? apply(label, fx) : (() => { const t = TABLES['Pagare il prezzo'](d); apply(label, () => {}, `, ${t.dice}: ${t.text}`); })())}>
-            {label}{done.includes(label) ? ' ✓' : ''}</button>
-        ))}</div>
-        {noGain && outcome === 'strong' && <p className="warn">Salute o Spirito a 4 o più: non puoi guadagnare slancio.</p>}
-      </>}
     </div>
   );
 }
