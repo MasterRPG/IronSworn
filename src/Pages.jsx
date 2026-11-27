@@ -1,50 +1,56 @@
 import { useState } from 'react';
 import { Segs } from './Tavolo.jsx';
 
-// "Luoghi e minacce": pagine di note condivise a sinistra, le minacce dei voti a destra.
-export default function Pages({ pages, tracks, onSave, onCreate, onDelete, onTrack, onNewVow }) {
-  const [sel, setSel] = useState(pages[0]?.id);
-  const [form, setForm] = useState(null); // { id?, titolo, testo }
+// Pagine condivise, divise per tipo: groups = [[tipo, etichetta, testo del pulsante "nuovo"], …].
+export default function Pages({ pages, groups, onSave, onCreate, onDelete }) {
+  const mine = pages.filter((p) => groups.some(([tipo]) => tipo === p.tipo));
+  const [sel, setSel] = useState(mine[0]?.id);
+  const [form, setForm] = useState(null); // { id?, tipo, titolo, testo }
   const [del, setDel] = useState(false);
-  const page = pages.find((p) => p.id === sel) ?? pages[0];
+  const page = mine.find((p) => p.id === sel) ?? mine[0];
   const save = async () => {
-    const row = { titolo: form.titolo.trim(), testo: form.testo };
+    const row = { tipo: form.tipo, titolo: form.titolo.trim(), testo: form.testo };
     if (form.id) onSave(form.id, row);
     else setSel(await onCreate(row));
     setForm(null);
   };
   return (
-    <div className="two-col">
-      <section>
-        <div className="row">
-          {pages.map((p) => <button key={p.id} className="chip" aria-pressed={p.id === page?.id && !form} onClick={() => { setSel(p.id); setForm(null); setDel(false); }}>{p.titolo}</button>)}
-          <button className="ghost small" onClick={() => setForm({ titolo: '', testo: '' })}>+ Nuova pagina di note</button>
+    <section>
+      {groups.map(([tipo, title, add]) => (
+        <div key={tipo} className="stack">
+          <p className="label">{title}</p>
+          <div className="row">
+            {mine.filter((p) => p.tipo === tipo).map((p) => <button key={p.id} className="chip" aria-pressed={p.id === page?.id && !form} onClick={() => { setSel(p.id); setForm(null); setDel(false); }}>{p.titolo}</button>)}
+            <button className="ghost small" onClick={() => { setForm({ tipo, titolo: '', testo: '' }); setDel(false); }}>{add}</button>
+          </div>
         </div>
-        {form ? (
-          <div className="form">
-            <b>{form.id ? 'Modifica pagina' : 'Nuova pagina'}</b>
-            <label>Titolo<input value={form.titolo} placeholder="es. La torre nel bosco" onChange={(e) => setForm({ ...form, titolo: e.target.value })} /></label>
-            <label>Testo<textarea rows={14} value={form.testo} placeholder="Luoghi, persone, indizi…" onChange={(e) => setForm({ ...form, testo: e.target.value })} /></label>
-            <div className="actions"><button className="ghost" onClick={() => setForm(null)}>Annulla</button><button onClick={save} disabled={!form.titolo.trim()}>Salva</button></div>
-          </div>
-        ) : page ? (
-          <div className="stack group">
-            <div className="row"><h2 className="vow-title grow">{page.titolo}</h2>
-              <span className="muted small-text">Modificabile da tutti{page.updated_at ? ` · ultima modifica ${new Date(page.updated_at).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''}</span></div>
-            <p className="page-text">{page.testo || <span className="muted">Pagina vuota.</span>}</p>
-            {!del && <div className="row group"><button className="ghost small" onClick={() => setForm({ id: page.id, titolo: page.titolo, testo: page.testo ?? '' })}>Modifica pagina</button>
-              <button className="link danger" onClick={() => setDel(true)}>Elimina pagina</button></div>}
-            {del && <div className="offer"><span>Eliminare la pagina "{page.titolo}"?</span><button className="ghost small" onClick={() => setDel(false)}>No</button>
-              <button className="small" onClick={() => { onDelete(page.id); setDel(false); setSel(undefined); }}>Elimina</button></div>}
-          </div>
-        ) : <p className="muted">Nessuna pagina.</p>}
-      </section>
-      <Threats tracks={tracks} onTrack={onTrack} onNewVow={onNewVow} />
-    </div>
+      ))}
+      {form ? (
+        <div className="form group">
+          <b>{form.id ? 'Modifica' : add(groups, form.tipo)}</b>
+          {groups.length > 1 && <div className="chips">{groups.map(([tipo, title]) => <button key={tipo} className="chip" aria-pressed={form.tipo === tipo} onClick={() => setForm({ ...form, tipo })}>{title}</button>)}</div>}
+          <label>Nome<input value={form.titolo} placeholder={form.tipo === 'png' ? 'es. Godfried, il locandiere' : 'es. La torre nel bosco'} onChange={(e) => setForm({ ...form, titolo: e.target.value })} /></label>
+          <label>Testo<textarea rows={14} value={form.testo} placeholder={form.tipo === 'png' ? 'Chi è, cosa vuole, cosa sa…' : 'Com\'è, chi ci vive, indizi…'} onChange={(e) => setForm({ ...form, testo: e.target.value })} /></label>
+          <div className="actions"><button className="ghost" onClick={() => setForm(null)}>Annulla</button><button onClick={save} disabled={!form.titolo.trim()}>Salva</button></div>
+        </div>
+      ) : page ? (
+        <div className="stack group">
+          <div className="row"><h2 className="vow-title grow">{page.titolo}</h2>
+            <span className="muted small-text">Modificabile da tutti{page.updated_at ? ` · ultima modifica ${new Date(page.updated_at).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''}</span></div>
+          <p className="page-text">{page.testo || <span className="muted">Pagina vuota.</span>}</p>
+          {!del && <div className="row group"><button className="ghost small" onClick={() => setForm({ id: page.id, tipo: page.tipo, titolo: page.titolo, testo: page.testo ?? '' })}>Modifica</button>
+            <button className="link danger" onClick={() => setDel(true)}>Elimina</button></div>}
+          {del && <div className="offer"><span>Eliminare {page.tipo === 'png' ? 'il PNG' : 'la pagina'} "{page.titolo}"?</span><button className="ghost small" onClick={() => setDel(false)}>No</button>
+            <button className="small" onClick={() => { onDelete(page.id); setDel(false); setSel(undefined); }}>Elimina</button></div>}
+        </div>
+      ) : <p className="muted group">Ancora niente qui.</p>}
+    </section>
   );
 }
 
-function Threats({ tracks, onTrack, onNewVow }) {
+const add = (groups, tipo) => groups.find(([t]) => t === tipo)[2].replace('+ ', '');
+
+export function Threats({ tracks, onTrack, onNewVow }) {
   const [form, setForm] = useState(null); // { nome, voto }
   const vows = tracks.filter((t) => t.tipo === 'voto' && !t.chiuso);
   const threats = vows.filter((t) => t.minaccia !== null);

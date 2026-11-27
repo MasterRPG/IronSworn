@@ -5,7 +5,7 @@ import { emptyCharacter } from './rules/character.js';
 import Sheet from './Sheet.jsx';
 import Tavolo, { Oracolo } from './Tavolo.jsx';
 import Tracks from './Tracks.jsx';
-import Pages from './Pages.jsx';
+import Pages, { Threats } from './Pages.jsx';
 import { completeClocks } from './rules/progress.js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -196,7 +196,7 @@ function Table({ session }) {
         </div>
       </header>
       <nav className="tabs" aria-label="Sezioni">
-        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['note', 'Luoghi e minacce']].map(([k, label]) => (
+        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['mondo', 'Il mondo']].map(([k, label]) => (
           <button key={k} className={tab === k ? 'active' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{label}</button>
         ))}
       </nav>
@@ -204,7 +204,10 @@ function Table({ session }) {
       {tab === 'tavolo' && <Tavolo chars={active} uid={uid} me={me} scorte={scorte} scene={scene} tracks={tracks} rolls={rolls} act={act} />}
       {tab === 'oracolo' && <Oracolo rolls={rolls} me={me} act={act} />}
       {tab === 'voti' && <Tracks tracks={tracks} chars={chars} me={me} scene={scene} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
-      {tab === 'note' && <Pages pages={pages} tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
+      {tab === 'mondo' && <div className="two-col">
+        <Pages pages={pages} groups={[['luogo', 'Luoghi', '+ Nuovo luogo'], ['png', 'PNG', '+ Nuovo PNG']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} />
+        <Threats tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} />
+      </div>}
       {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
     </main>
   );
