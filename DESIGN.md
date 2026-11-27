@@ -7,6 +7,7 @@ La "bibbia" del sito. Ogni valore vive come token in cima a `src/style.css`: nel
 - **Inter** per tutto il testo. **Cinzel** solo per il logo "Ironsworn", mai altrove.
 - Niente testo tutto maiuscolo, tranne le etichette di gruppo (vedi sotto).
 - Tre pesi: 400 testo, 600 titoli e testo in evidenza, 700 solo per i numeri grandi.
+- Corsivo solo per i trigger delle mosse ("Quando…", 600 come nel manuale) e per le righe di racconto nel registro.
 
 | Token | Misura | Uso |
 |---|---|---|

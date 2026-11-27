@@ -27,5 +27,8 @@ test('ogni tabella si può leggere per intero', () => {
 });
 
 test('ogni mossa dice quando si usa', () => {
-  for (const m of ACTION_MOVES) assert.match(MOVE_TRIGGERS[m.name]?.text ?? '', /^Quando /, m.name);
+  for (const m of ACTION_MOVES) {
+    const t = MOVE_TRIGGERS[m.name];
+    assert.ok(t?.when.startsWith('Quando ') && t.text.startsWith(t.when), m.name);
+  }
 });
