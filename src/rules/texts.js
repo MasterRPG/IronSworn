@@ -2,8 +2,8 @@
 
 // Ogni esito: testo, quante opzioni si scelgono ("tutte" = si applicano tutte) e le opzioni a elenco.
 // Un'opzione è [testo, effetto]: l'effetto somma ai campi della scheda (salute/spirito = danni) o alle Scorte;
-// null = solo racconto; 'prezzo' = Pagare il prezzo.
-const PAY = { pick: 'Scegli uno', options: [['Tira la tabella Pagare il prezzo', 'prezzo'], ['Subire una perdita: 2 di Salute', { salute: 2 }], ['Subire una perdita: 2 di Spirito', { spirito: 2 }]] };
+// null = solo racconto; 'prezzo' = Pagare il prezzo; 'perdita' = Subire una perdita (1, o 2 se il grado è Formidabile o Leggendario).
+const PAY = { pick: 'Scegli uno', options: [['Tira la tabella Pagare il prezzo', 'prezzo'], ['Subire una perdita di Salute', { salute: 'perdita' }], ['Subire una perdita di Spirito', { spirito: 'perdita' }]] };
 const COMBAT = [['Segna progresso', null], ['Colpo terribile: segna progresso una seconda volta', null], ['Gli prendi qualcosa', null], ['Lo sposti', null], ['Lo spaventi: un compagno ha +1', null], ['Proteggi un compagno', null]];
 const WILD = [['−1 Salute', { salute: -1 }], ['−1 Spirito', { spirito: -1 }], ['+1 slancio', { slancio: 1 }], ['+1 al prossimo viaggio', null], ['+1 Scorte', { scorte: 1 }]];
 const TOWN = [['−2 Salute', { salute: -2 }], ['−2 Spirito', { spirito: -2 }], ['+2 Scorte', { scorte: 2 }], ['Sostituire o aggiustare un asset', null], ['+2 slancio', { slancio: 2 }]];
@@ -16,7 +16,7 @@ export const MOVE_TEXTS = {
   },
   'Sfidare il pericolo': {
     strong: { text: 'Ce la fai.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
-    weak: { text: 'Ce la fai, ma paghi un costo.', pick: 'Scegli uno', options: [['−1 slancio', { slancio: -1 }], ['Subire una perdita: 2 di Salute', { salute: 2 }], ['Subire una perdita: 2 di Spirito', { spirito: 2 }], ['Subire una perdita: −2 Scorte', { scorte: -2 }]] },
+    weak: { text: 'Ce la fai, ma paghi un costo.', pick: 'Scegli uno', options: [['−1 slancio', { slancio: -1 }], ['Subire una perdita di Salute', { salute: 'perdita' }], ['Subire una perdita di Spirito', { spirito: 'perdita' }], ['Subire una perdita di Scorte', { scorte: 'perdita' }]] },
     miss: { text: 'Non ce la fai, o ce la fai con una conseguenza grave.', ...PAY },
   },
   "Preparare l'azione": {
@@ -35,8 +35,8 @@ export const MOVE_TEXTS = {
     miss: { text: 'Rifiuta, o chiede qualcosa che ti costa caro.', ...PAY },
   },
   'Intraprendere un viaggio': {
-    strong: { text: 'Raggiungete un punto di sosta o una nuova area.', pick: 'Scegli uno', options: [['Usate bene le risorse: segna progresso', null], ['Andate veloci: segna progresso, +1 slancio e −2 Scorte', { slancio: 1, scorte: -2 }]] },
-    weak: { text: 'Segnate progresso, ma consumate risorse.', pick: 'tutte', options: [['Subire una perdita: −2 Scorte', { scorte: -2 }]] },
+    strong: { text: 'Raggiungete un punto di sosta o una nuova area.', pick: 'Scegli uno', options: [['Usate bene le risorse: segna progresso', null], ['Andate veloci: segna progresso, +1 slancio e Subire una perdita di Scorte', { slancio: 1, scorte: 'perdita' }]] },
+    weak: { text: 'Segnate progresso, ma consumate risorse.', pick: 'tutte', options: [['Subire una perdita di Scorte', { scorte: 'perdita' }]] },
     miss: { text: 'Il percorso si complica (strada sbagliata, maltempo, un incontro, un crollo).', ...PAY },
   },
   'Stringere un legame': {
@@ -61,7 +61,7 @@ export const MOVE_TEXTS = {
   },
   'Compiere un rito': {
     strong: { text: 'La magia funziona come volevi o comunque a tuo favore.' },
-    weak: { text: 'La magia funziona, ma c\'è un costo.', pick: 'Scegli uno', options: [['Effetto più debole o più breve', null], ['Subire una perdita: 2 di Spirito', { spirito: 2 }], ['Qualcosa di oscuro si accorge di te', null], ['Un effetto collaterale', null]] },
+    weak: { text: 'La magia funziona, ma c\'è un costo.', pick: 'Scegli uno', options: [['Effetto più debole o più breve', null], ['Subire una perdita di Spirito', { spirito: 'perdita' }], ['Qualcosa di oscuro si accorge di te', null], ['Un effetto collaterale', null]] },
     miss: { text: 'La magia ti sfugge di mano, e il prezzo è strano o soprannaturale.', ...PAY },
   },
 };
