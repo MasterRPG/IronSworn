@@ -29,9 +29,9 @@ export default function Diario({ sessions, onDelete }) {
   const scenes = splitScenes(s.righe);
   return (
     <div className="page">
-      <div className="row">{sessions.map((x) => (
-        <button key={x.id} className="chip" aria-pressed={x.id === s.id} onClick={() => { setSel(x.id); setDel(null); }}>{x.titolo} · {new Date(x.created_at).toLocaleDateString('it-IT')}</button>
-      ))}</div>
+      <label>Sessione<select value={s.id} onChange={(e) => { setSel(Number(e.target.value)); setDel(null); }}>
+        {sessions.map((x) => <option key={x.id} value={x.id}>{x.titolo} · {new Date(x.created_at).toLocaleDateString('it-IT')}</option>)}
+      </select></label>
       <section>
         <div className="row"><h2 className="section-title grow">{s.titolo}</h2>
           <span className="muted small-text">{when(s.created_at)} · {scenes.filter((x) => x.scena).length} scene · {s.righe.length} righe</span></div>
