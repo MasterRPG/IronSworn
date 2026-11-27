@@ -5,6 +5,7 @@ import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
 import { MOVE_TEXTS, FINISH_TEXTS, TABLES } from './rules/texts.js';
 import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress } from './rules/progress.js';
+import { trackText } from './rules/diario.js';
 
 // Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
 export const SUSPENSE_MS = 1500;
@@ -103,7 +104,7 @@ function Party({ chars, uid, scorte, onScorte }) {
   );
 }
 
-function SceneBar({ scene, sceneVow, tracks, onSave }) {
+function SceneBar({ scene, sceneVow, tracks, onSave, onNew }) {
   const [form, setForm] = useState(null);
   // La scena si collega a un voto con minaccia: i fallimenti la fanno avanzare, le tappe segnano progresso.
   const vows = tracks.filter((t) => t.tipo === 'voto' && !t.chiuso && t.minaccia !== null);
@@ -122,7 +123,7 @@ function SceneBar({ scene, sceneVow, tracks, onSave }) {
         <p className="muted small-text">I fallimenti in questa scena propongono di avanzare la minaccia del voto, le tappe di segnarne il progresso.</p>
         <div className="actions">
           <button className="ghost" onClick={() => setForm(null)}>Annulla</button>
-          <button onClick={() => { onSave({ scena: form.scena.trim(), scena_voto: form.voto }); setForm(null); }} disabled={!form.scena.trim()}>{form.nuova ? 'Inizia la scena' : 'Salva'}</button>
+          <button onClick={() => { (form.nuova ? onNew : onSave)({ scena: form.scena.trim(), scena_voto: form.voto }); setForm(null); }} disabled={!form.scena.trim()}>{form.nuova ? 'Inizia la scena' : 'Salva'}</button>
         </div>
       </div>
     );
@@ -163,7 +164,7 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
   return (
     <section aria-label="Tiro">
       <h2 className="section-title">Fai una mossa</h2>
-      <SceneBar scene={scene} sceneVow={sceneVow} tracks={tracks} onSave={act.saveParty} />
+      <SceneBar scene={scene} sceneVow={sceneVow} tracks={tracks} onSave={act.saveParty} onNew={act.newScene} />
       <p className="label">Mossa</p>
       <div className="chips">{ACTION_MOVES.map((m) => <button key={m.name} className="chip" aria-pressed={m.name === move} onClick={() => pickMove(m.name)}>{m.name}</button>)}</div>
       <div className="cols">
@@ -310,6 +311,8 @@ function SceneVow({ t }) {
 function Log({ rolls, uid, me, act }) {
   const [story, setStory] = useState('');
   const [ask, setAsk] = useState(false);
+  const [closing, setClosing] = useState(null); // titolo della sessione da chiudere
+  const current = rolls.filter((r) => r.id > act.since);
   const tell = (e) => {
     e.preventDefault();
     if (!story.trim()) return;
@@ -319,23 +322,33 @@ function Log({ rolls, uid, me, act }) {
   return (
     <section aria-label="Registro">
       <div className="row"><h2 className="section-title grow">Registro</h2>
-        {act.clearLog && rolls.length > 0 && !ask && <button className="link danger" onClick={() => setAsk(true)}>Pulisci</button>}</div>
+        {act.closeSession && current.length > 0 && !ask && closing === null && <button className="link" onClick={() => setClosing(`Sessione ${act.sessionNumber}`)}>Chiudi sessione</button>}
+        {act.clearLog && rolls.length > 0 && !ask && closing === null && <button className="link danger" onClick={() => setAsk(true)}>Pulisci</button>}</div>
+      {closing !== null && <div className="form">
+        <b>Chiudi la sessione</b>
+        <label>Titolo<input value={closing} maxLength={80} onChange={(e) => setClosing(e.target.value)} /></label>
+        <p className="muted small-text">Il registro di questa sessione finisce nel Diario, diviso per scena, con tiri e avanzamenti. Qui il registro riparte vuoto.</p>
+        <div className="actions"><button className="ghost" onClick={() => setClosing(null)}>Annulla</button>
+          <button disabled={!closing.trim()} onClick={() => { act.closeSession(closing.trim()); setClosing(null); }}>Chiudi sessione</button></div>
+      </div>}
       {ask && <div className="offer"><span>Cancellare tutto il registro ({rolls.length > 99 ? 'almeno 100 righe' : rolls.length === 1 ? '1 riga' : `${rolls.length} righe`})? Non si può annullare.</span>
         <button className="ghost small" onClick={() => setAsk(false)}>No</button><button className="small" onClick={() => { act.clearLog(); setAsk(false); }}>Cancella tutto</button></div>}
       <form className="story" onSubmit={tell}>
         <input value={story} placeholder="Scrivi una riga di racconto…" aria-label="Riga di racconto" onChange={(e) => setStory(e.target.value)} />
         <button disabled={!me}>Aggiungi</button>
       </form>
-      <ol className="log">{rolls.slice(0, 40).map((r) => <LogEntry key={r.id} row={r} mine={r.user_id === uid} onChallenge={() => act.challenge(r)} />)}</ol>
+      <ol className="log">{current.slice(0, 40).map((r) => <LogEntry key={r.id} row={r} mine={r.user_id === uid} onChallenge={() => act.challenge(r)} />)}</ol>
     </section>
   );
 }
 
-function LogEntry({ row, mine, onChallenge }) {
+export function LogEntry({ row, mine, onChallenge }) {
   const r = row.result;
   const time = new Date(row.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const meta = <span className="meta">{time} · {row.player_name}</span>;
   const match = r.match && <em> Doppio!</em>;
+  if (r.kind === 'scene') return <li className="scene">{meta}{r.continua ? 'Si riprende la scena' : 'Nuova scena'}: <b>{r.scena}</b>{r.voto && <span className="muted"> · voto {r.voto}</span>}</li>;
+  if (r.kind === 'track') return <li className="track">{meta}{trackText(r)}</li>;
   if (r.kind === 'note') return <li className="note">{meta}{r.testo}</li>;
   if (r.kind === 'burn') return <li>{meta}Usa lo slancio: ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
   if (r.kind === 'table') return <li>{meta}{r.name}, {r.dice}: {r.text}</li>;

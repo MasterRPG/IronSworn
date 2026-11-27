@@ -7,6 +7,8 @@ import Tavolo, { Oracolo } from './Tavolo.jsx';
 import Tracks from './Tracks.jsx';
 import Pages, { Threats } from './Pages.jsx';
 import { completeClocks } from './rules/progress.js';
+import { trackEvents } from './rules/diario.js';
+import Diario from './Diario.jsx';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -84,6 +86,9 @@ function Table({ session }) {
   const [party, setParty] = useLive('party', (q) => q, setError);
   const [tracks, setTracks] = useLive('tracks', (q) => q.order('id'), setError);
   const [pages, setPages] = useLive('pages', (q) => q.order('id'), setError);
+  const [sessions] = useLive('sessions', (q) => q.order('id', { ascending: false }), setError);
+  // La sessione in corso parte dopo l'ultima riga del registro finita nel Diario.
+  const since = sessions.reduce((m, x) => Math.max(m, x.fino_a), 0);
   const [tab, setTab] = useState('tavolo');
   const scene = party[0] ?? { id: 1, scorte: 5, scena: '', scena_voto: null };
   const uid = session.user.id;
@@ -117,6 +122,8 @@ function Table({ session }) {
     if (error) setError(error.message);
   };
   const saveTrack = async (id, patch) => {
+    const old = tracks.find((t) => t.id === id);
+    if (old) log(trackEvents(old, patch));
     setTracks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const { error } = await supabase.from('tracks').update(patch).eq('id', id);
     if (error) setError(error.message);
@@ -125,8 +132,11 @@ function Table({ session }) {
     const { data, error } = await supabase.from('tracks').insert(row).select().single();
     if (error) return setError(error.message);
     setTracks((ts) => [...ts.filter((t) => t.id !== data.id), data]);
+    log([{ kind: 'track', trackId: data.id, tipo: data.tipo, nome: data.nome, cosa: 'nuovo', a: data.grado }]);
   };
   const deleteTrack = async (id) => {
+    const old = tracks.find((t) => t.id === id);
+    if (old) log([{ kind: 'track', trackId: id, tipo: old.tipo, nome: old.nome, cosa: 'eliminato' }]);
     setTracks((ts) => ts.filter((t) => t.id !== id));
     const { error } = await supabase.from('tracks').delete().eq('id', id);
     if (error) setError(error.message);
@@ -183,6 +193,31 @@ function Table({ session }) {
     if (me) saveChar(me.id, { ...me.data, slancio: r.result.burn.newMomentum });
   };
 
+  // Righe del registro che non sono tiri (scene, tracciati): le scrive chiunque, anche senza personaggio scelto.
+  const log = async (results) => {
+    if (!results.length) return;
+    const player_name = me?.data.nome || session.user.user_metadata?.nome || 'qualcuno';
+    const { data, error } = await supabase.from('rolls').insert(results.map((result) => ({ player_name, move: result.kind === 'scene' ? 'Scena' : 'Tracciato', result }))).select();
+    if (error) return setError(error.message);
+    data.forEach((row) => setRolls((rs) => upsert(rs, row)));
+  };
+  const newScene = (patch) => {
+    saveParty(patch);
+    log([{ kind: 'scene', scena: patch.scena, voto: tracks.find((t) => t.id === patch.scena_voto)?.nome ?? null }]);
+  };
+  // Chiudere la sessione: copia nel Diario tutto il registro dalla sessione precedente; la scena in corso continua nella prossima.
+  const closeSession = async (titolo) => {
+    const { data: righe, error } = await supabase.from('rolls').select('*').gt('id', since).order('id');
+    if (error) return setError(error.message);
+    if (!righe.length) return setError('Il registro di questa sessione è vuoto.');
+    const { error: e2 } = await supabase.from('sessions').insert({ titolo, fino_a: righe.at(-1).id, righe });
+    if (e2) return setError(e2.message);
+    if (scene.scena) log([{ kind: 'scene', scena: scene.scena, voto: tracks.find((t) => t.id === scene.scena_voto)?.nome ?? null, continua: true }]);
+  };
+  const deleteSession = async (id) => {
+    const { error } = await supabase.from('sessions').delete().eq('id', id);
+    if (error) setError(error.message);
+  };
   const note = (testo) => save('Racconto', { kind: 'note', testo });
   const ask = (odds, question) => save("Chiedere all'oracolo", oracle({ odds, question }, rollDice.oracle()));
   const clearLog = async () => {
@@ -190,7 +225,9 @@ function Table({ session }) {
     if (error) return setError(error.message);
     setRolls([]);
   };
-  const act = { save, note, ask, challenge, burn, saveChar, saveParty, saveTrack, scorte, ODDS, clearLog: session.user.email === ADMIN_EMAIL ? clearLog : null };
+  const admin = session.user.email === ADMIN_EMAIL;
+  const act = { save, note, ask, challenge, burn, saveChar, saveParty, newScene, saveTrack, scorte, ODDS, since, sessionNumber: sessions.length + 1,
+    clearLog: admin ? clearLog : null, closeSession: admin ? closeSession : null };
   const online = usePresence(session, me);
 
   return (
@@ -208,7 +245,7 @@ function Table({ session }) {
         </div>
       </header>
       <nav className="tabs" aria-label="Sezioni">
-        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['mondo', 'Il mondo'], ['note', 'Note']].map(([k, label]) => (
+        {[['tavolo', 'Tavolo'], ['schede', 'Schede'], ['voti', 'Voti'], ['oracolo', 'Oracolo e tabelle'], ['mondo', 'Il mondo'], ['note', 'Note'], ['diario', 'Diario']].map(([k, label]) => (
           <button key={k} className={tab === k ? 'active' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{label}</button>
         ))}
       </nav>
@@ -221,7 +258,8 @@ function Table({ session }) {
         <Threats tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} />
       </div>}
       {tab === 'note' && <Pages pages={pages} groups={[['nota', 'Note', '+ Nuova nota']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} onUpload={uploadImage} />}
-      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
+      {tab === 'diario' && <Diario sessions={sessions} onDelete={admin ? deleteSession : null} />}
+      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={admin} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
     </main>
   );
 }
