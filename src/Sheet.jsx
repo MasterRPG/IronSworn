@@ -14,6 +14,23 @@ function Num({ value, limits, onSave, label }) {
     onChange={(e) => onSave(clamp(e.target.value, limits))} />;
 }
 
+// Tracciato a caselle (esperienza 0-20): un clic segna fino a lì, un clic sull'ultima segnata la cancella.
+function Track({ value, size, onSave, label }) {
+  return (
+    <span className="track" role="group" aria-label={`${label}: ${value} su ${size}`}>
+      {Array.from({ length: size }, (_, i) => i + 1).map((n) => (
+        <button key={n} type="button" className={n <= value ? 'on' : ''} aria-label={`${label} ${n}`}
+          onClick={() => onSave(n === value ? n - 1 : n)} />
+      ))}
+    </span>
+  );
+}
+
+// Dati salvati con la fase 2: legami come frasi, asset con "rotto".
+const legameOf = (l) => (typeof l === 'string' ? { con: '', testo: l } : l);
+const statoOf = (a) => a.stato ?? (a.rotto ? 'Rotto' : 'OK');
+export const STATI = ['OK', 'Rotto', 'Perso'];
+
 // Orologio da 6 segmenti: un clic segna fino a lì, un clic sull'ultimo segnato lo toglie.
 function Clock({ value, onSave, label }) {
   return (
@@ -26,11 +43,16 @@ function Clock({ value, onSave, label }) {
   );
 }
 
-export default function Sheet({ c, onChange }) {
+export default function Sheet({ c, readOnly, onChange }) {
   const set = (patch) => onChange({ ...c, ...patch });
   const eff = effectiveStats(c);
   const setList = (key, i, val) => set({ [key]: c[key].map((x, j) => (j === i ? val : x)) });
   const setAsset = (i, patch) => set({ asset: c.asset.map((a, j) => (j === i ? { ...a, ...patch } : a)) });
+  const legami = c.legami.map(legameOf);
+  const setLegame = (i, patch) => set({ legami: legami.map((l, j) => (j === i ? { ...l, ...patch } : l)) });
+  // Le statistiche cambiano di rado: si chiede conferma per evitare clic per sbaglio.
+  const setStat = (s, v) => v !== c.stats[s] && confirm(`Cambiare ${s} da ${c.stats[s]} a ${v}?`) && set({ stats: { ...c.stats, [s]: v } });
+  const sure = (what) => confirm(`Eliminare ${what}?`);
 
   return (
     <details className="sheet">
@@ -40,6 +62,8 @@ export default function Sheet({ c, onChange }) {
           Fis {eff.fisico} · Ani {eff.animo} · Ing {eff.ingegno} · Slancio {c.slancio > 0 ? '+' : ''}{c.slancio} · Salute {c.salute}/6 · Spirito {c.spirito}/6
         </span>
       </summary>
+      {readOnly && <p className="muted">Solo chi gioca questo personaggio può modificarne la scheda.</p>}
+      <fieldset className="sheet-fields" disabled={readOnly}>
       <div className="sheet-grid">
         <div>
           <label>Nome <Text value={c.nome} onSave={(nome) => set({ nome })} /></label>
@@ -52,13 +76,14 @@ export default function Sheet({ c, onChange }) {
           {['fisico', 'animo', 'ingegno'].map((s) => (
             <label key={s}>{s[0].toUpperCase() + s.slice(1)}
               <span>{eff[s] !== c.stats[s] && <span className="muted">vale {eff[s]} </span>}
-                <Num label={s} value={c.stats[s]} limits={LIMITS.stat} onSave={(v) => set({ stats: { ...c.stats, [s]: v } })} /></span>
+                <Num label={s} value={c.stats[s]} limits={LIMITS.stat} onSave={(v) => setStat(s, v)} /></span>
             </label>
           ))}
           <label>Salute <Clock label="Salute" value={c.salute} onSave={(salute) => set({ salute })} /></label>
           <label>Spirito <Clock label="Spirito" value={c.spirito} onSave={(spirito) => set({ spirito })} /></label>
           <label>Slancio <Num label="Slancio" value={c.slancio} limits={LIMITS.slancio} onSave={(slancio) => set({ slancio })} /></label>
-          <label>Esperienza <Num label="Esperienza" value={c.esperienza} limits={[0, 99]} onSave={(esperienza) => set({ esperienza })} /></label>
+          <label className="col">Esperienza ({c.esperienza}/20)
+            <Track label="Esperienza" size={20} value={Math.min(20, c.esperienza)} onSave={(esperienza) => set({ esperienza })} /></label>
           {(c.salute >= 4 || c.spirito >= 4) && <p className="warn">Salute o Spirito a 4 o più: non puoi guadagnare slancio.</p>}
         </div>
         <div>
@@ -69,8 +94,14 @@ export default function Sheet({ c, onChange }) {
         </div>
         <div>
           <h4>Legami</h4>
-          {c.legami.map((s, i) => <Text key={i} value={s} onSave={(v) => set({ legami: v.trim() ? c.legami.map((x, j) => (j === i ? v : x)) : c.legami.filter((_, j) => j !== i) })} />)}
-          <button type="button" className="link" onClick={() => set({ legami: [...c.legami, 'Nuovo legame'] })}>+ legame</button>
+          {legami.map((l, i) => (
+            <div key={i} className="legame">
+              <Text value={l.con} placeholder="con chi" aria-label="Con chi" onSave={(con) => setLegame(i, { con })} />
+              <Text area rows={2} value={l.testo} placeholder="il legame" aria-label="Legame" onSave={(testo) => setLegame(i, { testo })} />
+              <button type="button" className="link" onClick={() => sure('questo legame') && set({ legami: legami.filter((_, j) => j !== i) })}>elimina</button>
+            </div>
+          ))}
+          <button type="button" className="link" onClick={() => set({ legami: [...legami, { con: '', testo: '' }] })}>+ legame</button>
           <h4>Voto personale</h4>
           <Text area rows={2} value={c.voto.testo} onSave={(testo) => set({ voto: { ...c.voto, testo } })} />
           <label>Grado <select value={c.voto.grado} onChange={(e) => set({ voto: { ...c.voto, grado: e.target.value } })}>
@@ -80,17 +111,19 @@ export default function Sheet({ c, onChange }) {
         <div className="wide">
           <h4>Asset</h4>
           {c.asset.map((a, i) => (
-            <div key={i} className={`asset${a.rotto ? ' broken' : ''}`}>
+            <div key={i} className={`asset${statoOf(a) !== 'OK' ? ' broken' : ''}`}>
               <select value={a.tipo} aria-label="Tipo" onChange={(e) => setAsset(i, { tipo: e.target.value })}>
                 {ASSET_TYPES.map((t) => <option key={t}>{t}</option>)}</select>
               <Text area rows={2} value={a.testo} aria-label="Asset" onSave={(testo) => setAsset(i, { testo })} />
-              <label className="inline"><input type="checkbox" checked={a.rotto} onChange={(e) => setAsset(i, { rotto: e.target.checked })} /> rotto o perso</label>
-              <button type="button" className="link" onClick={() => set({ asset: c.asset.filter((_, j) => j !== i) })}>togli</button>
+              <select value={statoOf(a)} aria-label="Stato" onChange={(e) => setAsset(i, { stato: e.target.value, rotto: undefined })}>
+                {STATI.map((t) => <option key={t}>{t}</option>)}</select>
+              <button type="button" className="link" onClick={() => sure('questo asset') && set({ asset: c.asset.filter((_, j) => j !== i) })}>elimina</button>
             </div>
           ))}
-          <button type="button" className="link" onClick={() => set({ asset: [...c.asset, { tipo: 'Altro', testo: '', rotto: false }] })}>+ asset</button>
+          <button type="button" className="link" onClick={() => set({ asset: [...c.asset, { tipo: 'Altro', testo: '', stato: 'OK' }] })}>+ asset</button>
         </div>
       </div>
+      </fieldset>
     </details>
   );
 }

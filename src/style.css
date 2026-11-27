@@ -48,3 +48,15 @@ label.inline { justify-content: flex-start; margin: 0; }
 .clock button.on { background: var(--miss); border-color: var(--miss); }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .login { max-width: 360px; }
+.rolling .dice { display: inline-block; animation: tumble .3s infinite; letter-spacing: 4px; }
+@keyframes tumble { 0% { transform: rotate(0); } 50% { transform: rotate(14deg) translateY(-3px); } 100% { transform: rotate(0); } }
+.log li:not(.rolling) { animation: reveal .3s ease-out; }
+@keyframes reveal { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rolling .dice, .log li { animation: none !important; } }
+fieldset.sheet-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.track { display: inline-flex; flex-wrap: wrap; gap: 3px; }
+.track button { width: 16px; height: 16px; padding: 0; border-radius: 3px; border: 2px solid var(--muted); background: transparent; }
+.track button.on { background: var(--strong); border-color: var(--strong); }
+.legame { display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; align-items: center; margin: 6px 0; }
+.legame textarea { grid-column: 1 / -1; }
+fieldset:disabled .link, fieldset:disabled .clock button, fieldset:disabled .track button { cursor: default; }

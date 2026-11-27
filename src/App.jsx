@@ -63,7 +63,7 @@ function useLive(table, query, setError) {
   useEffect(() => {
     query(supabase.from(table).select('*')).then(({ data, error }) => (error ? setError(error.message) : setRows(data)));
     const channel = supabase.channel(table)
-      .on('postgres_changes', { event: '*', schema: 'public', table }, ({ new: row }) => setRows((rs) => upsert(rs, row)))
+      .on('postgres_changes', { event: '*', schema: 'public', table }, ({ new: row }) => setRows((rs) => upsert(rs, { ...row, fresh: true })))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [table]);
@@ -76,11 +76,16 @@ function Table({ session }) {
   const [rolls, setRolls] = useLive('rolls', (q) => q.order('id', { ascending: false }).limit(100), setError);
   const [chars, setChars] = useLive('characters', (q) => q.order('id'), setError);
   const [party, setParty] = useLive('party', (q) => q, setError);
-  const [myId, setMyId] = useState(() => Number(localStorage.getItem('personaggio')) || null);
-  const me = chars.find((c) => c.id === myId);
+  const uid = session.user.id;
+  const me = chars.find((c) => c.owner === uid);
   const scorte = party[0]?.scorte ?? 5;
 
-  const pick = (id) => { setMyId(id); localStorage.setItem('personaggio', String(id)); };
+  // Scegliere un personaggio libero lo rende tuo; "cambia" lo lascia libero.
+  const setOwner = async (id, owner) => {
+    setChars((cs) => cs.map((c) => (c.id === id ? { ...c, owner } : c)));
+    const { error } = await supabase.from('characters').update({ owner }).eq('id', id);
+    if (error) setError(error.message);
+  };
 
   // shortcut: ultima scrittura vince sull'intera scheda; se due persone modificano la stessa scheda nello stesso istante, una modifica si perde.
   const saveChar = async (id, data) => {
@@ -105,7 +110,7 @@ function Table({ session }) {
     const { data, error } = await supabase.from('rolls').insert({ player_name: me.data.nome, move, result }).select().single();
     if (error) return setError(error.message);
     setError('');
-    setRolls((rs) => upsert(rs, data));
+    setRolls((rs) => upsert(rs, { ...data, fresh: true }));
   };
   const burn = async (r) => {
     await save(r.move, { kind: 'burn', of: r.id, outcome: r.result.burn.outcome });
@@ -120,9 +125,11 @@ function Table({ session }) {
     <main>
       <header>
         <h1>Ironsworn</h1>
-        <label>Sono <select value={myId ?? ''} onChange={(e) => pick(Number(e.target.value))}>
-          <option value="" disabled>scegli…</option>
-          {chars.map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>
+        {me
+          ? <span>Sono <b>{me.data.nome}</b> <button className="link" onClick={() => setOwner(me.id, null)}>cambia</button></span>
+          : <label>Sono <select value="" onChange={(e) => setOwner(Number(e.target.value), uid)}>
+              <option value="" disabled>scegli…</option>
+              {chars.filter((c) => !c.owner).map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>}
         <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveScorte(clamp(e.target.value, LIMITS.scorte))} /></label>
         <button className="link" onClick={() => supabase.auth.signOut()}>Esci</button>
       </header>
@@ -139,7 +146,7 @@ function Table({ session }) {
         ))}
       </ol>
       <h2>Schede</h2>
-      {chars.map((c) => <Sheet key={c.id} c={c.data} onChange={(data) => saveChar(c.id, data)} />)}
+      {chars.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
       <button className="link" onClick={addChar}>+ nuovo personaggio</button>
     </main>
   );
@@ -201,11 +208,21 @@ function OraclePanel({ onRoll }) {
   );
 }
 
+// Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
+const SUSPENSE_MS = 1500;
+
 function LogEntry({ row, canBurn, onBurn }) {
   const r = row.result;
+  const [rolling, setRolling] = useState(() => row.fresh && r.kind !== 'burn');
+  useEffect(() => {
+    if (!rolling) return;
+    const t = setTimeout(() => setRolling(false), SUSPENSE_MS);
+    return () => clearTimeout(t);
+  }, []);
   const time = new Date(row.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const who = <><time>{time}</time> <b>{row.player_name}</b> · {row.move}</>;
   const match = r.match && <em> Doppio!</em>;
+  if (rolling) return <li className="rolling">{who}: <span className="dice" aria-label="dadi in movimento">⚀ ⚄ ⚂</span></li>;
   if (r.kind === 'burn') return <li className="burn">{who}: brucia lo slancio, ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
   if (r.kind === 'oracle') {
     return <li>{who}{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</li>;
