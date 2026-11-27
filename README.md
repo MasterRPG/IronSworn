@@ -17,6 +17,14 @@ Le regole stanno nel Google Doc "Ironsworn"; la logica dei tiri è in `src/rules
 
 Per attivarla su un progetto già in linea: nel SQL Editor esegui `supabase/002_schede.sql`, poi `supabase/003_import_foglio.sql` per importare le schede dal foglio.
 
+## Schede proprie
+
+- Ognuno modifica solo la propria scheda: scegli il tuo personaggio da "Sono…" in alto e diventa tuo; "cambia" lo lascia libero.
+- Conferma prima di cambiare una statistica; esperienza come tracciato da 0 a 20; asset con stato OK, Rotto o Perso; legami con "con chi" e il testo.
+- Un attimo di suspense prima di vedere il risultato di un tiro, per tutti al tavolo.
+
+Per attivarla: nel SQL Editor esegui `supabase/004_proprietari.sql`.
+
 ## Messa in linea (una volta sola)
 
 1. **Supabase.** Crea un account e un progetto gratuito su supabase.com.
