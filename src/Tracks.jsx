@@ -39,12 +39,12 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
   const isScene = scene.scena_voto === t.id;
   return (
     <article className={`card track-card${t.chiuso ? ' closed' : ''}`}>
-      <div className="row small-text">
+      <div className="row">
         <span className="tag">{t.tipo === 'voto' ? (owner ? 'Voto personale' : 'Voto di gruppo') : KINDS[t.tipo]}</span>
-        <span className="muted">{t.grado} · {RANK_STEP[t.grado]} segmenti</span>
-        {owner && <span className="muted" style={{ marginLeft: 'auto' }}>{owner.data.nome}</span>}
+        <span className="muted small-text">{t.grado} · {RANK_STEP[t.grado]} segmenti</span>
+        {owner && <span className="muted small-text push">{owner.data.nome}</span>}
       </div>
-      <p className="vow-title" style={{ marginTop: 8 }}>{t.nome}</p>
+      <p className="vow-title">{t.nome}</p>
       {t.tipo === 'voto' && t.ferro && <p className="muted small-text">Giurato su: {t.ferro}</p>}
       <Boxes segmenti={t.segmenti} />
       <p className="muted small-text">{completeClocks(t.segmenti)} orologi completi su 10</p>
@@ -56,12 +56,12 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
                 <button key={n} type="button" className={n <= t.minaccia_segmenti ? 'on' : ''} aria-label={`Minaccia ${n}`} onClick={() => set({ minaccia_segmenti: n === t.minaccia_segmenti ? n - 1 : n })} />
               ))}
             </span><span>{t.minaccia_segmenti}/6</span></div>
-          <p className="small-text">{t.minaccia}</p>
+          <p>{t.minaccia}</p>
           {t.minaccia_segmenti >= THREAT_SIZE && <p className="warn">La minaccia si compie: raccontatela, poi alzate il grado del voto o rinunciate.</p>}
         </div>
       )}
       {t.tipo === 'scontro' && (
-        <div className="row" style={{ marginTop: 8 }}>
+        <div className="row">
           {chars.map((c) => {
             const pos = t.posizioni[c.id] ?? 'vantaggio';
             return (
@@ -73,14 +73,14 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
           <span className="muted small-text">clic per cambiare</span>
         </div>
       )}
-      {isScene && <p className="small-text" style={{ color: 'var(--accent)' }}>Collegato alla scena in corso</p>}
-      <div className="row" style={{ marginTop: 10 }}>
+      {isScene && <p className="small-text accent-text">Collegato alla scena in corso</p>}
+      <div className="row group">
         <button className="small" onClick={() => set({ segmenti: markProgress(t.segmenti, t.grado) })} disabled={t.segmenti >= MAX_SEGMENTS}>Segna progresso (+{RANK_STEP[t.grado]})</button>
         {t.tipo === 'voto' && t.minaccia !== null && <button className="ghost small" onClick={() => set({ minaccia_segmenti: Math.min(THREAT_SIZE, t.minaccia_segmenti + 1) })} disabled={t.minaccia_segmenti >= THREAT_SIZE}>+1 minaccia</button>}
         <button className="ghost small" onClick={() => onFinish(t)}>Portare a termine</button>
       </div>
       {!del && (
-        <div className="row small-text" style={{ marginTop: 6 }}>
+        <div className="row">
           <button className="link" onClick={() => set({ segmenti: Math.max(0, t.segmenti - 1) })}>−1 segmento</button>
           <button className="link" onClick={() => confirm('Riprovare: tieni solo il primo orologio e alza il grado?') && set(retry(t))}>Riprovare</button>
           {t.tipo === 'voto' && t.minaccia !== null && <button className="link" onClick={() => confirm('Togliere la minaccia da questo voto?') && set({ minaccia: null, minaccia_segmenti: 0 })}>togli minaccia</button>}
@@ -117,9 +117,9 @@ export default function Tracks({ tracks, chars, me, scene, onSave, onCreate, onD
   };
   const props = { chars: live, scene, onSave, onDelete, onFinish };
   return (
-    <div>
-      <div className="row" style={{ marginBottom: 12 }}>
-        <h2 className="section-title" style={{ margin: '0 auto 0 0' }}>Voti, viaggi e scontri</h2>
+    <div className="page">
+      <div className="row">
+        <h2 className="section-title grow">Voti, viaggi e scontri</h2>
         <button className="small" onClick={() => start('gruppo')}>+ Giura un nuovo voto</button>
         <button className="ghost small" onClick={() => start('viaggio')}>+ Nuovo viaggio</button>
         <button className="ghost small" onClick={() => start('scontro')}>+ Nuovo scontro</button>
@@ -128,7 +128,7 @@ export default function Tracks({ tracks, chars, me, scene, onSave, onCreate, onD
       {form && <TrackForm form={form} setForm={setForm} chars={live} me={me} onSave={save} />}
       <div className="track-grid">{open.map((t) => <Track key={t.id} t={t} {...props} onEdit={() => edit(t)} />)}</div>
       {open.length === 0 && <p className="muted">Nessun tracciato aperto.</p>}
-      {closed.length > 0 && <details style={{ marginTop: 16 }}><summary className="label">Chiusi ({closed.length})</summary>
+      {closed.length > 0 && <details><summary className="label">Chiusi ({closed.length})</summary>
         <div className="track-grid">{closed.map((t) => <Track key={t.id} t={t} {...props} onEdit={() => edit(t)} />)}</div></details>}
     </div>
   );

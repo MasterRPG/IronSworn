@@ -74,7 +74,7 @@ function Party({ chars, uid, scorte, onScorte }) {
   return (
     <section aria-label="Compagnia">
       <h2 className="section-title">Compagnia</h2>
-      <div style={{ display: 'grid', gap: 8 }}>
+      <div className="stack">
         {chars.map(({ id, owner, data: c }) => {
           const eff = effectiveStats(c);
           const marks = (l) => l.filter((s) => s.trim()).length;
@@ -90,7 +90,7 @@ function Party({ chars, uid, scorte, onScorte }) {
           );
         })}
         <div className="pc scorte">
-          <div style={{ marginRight: 'auto' }}><p className="label" style={{ margin: 0 }}>Scorte del gruppo</p><span className="big">{scorte}</span><span className="muted"> / 5</span></div>
+          <div className="grow"><p className="label">Scorte del gruppo</p><span className="big">{scorte}</span><span className="muted"> / 5</span></div>
           <button className="ghost" onClick={() => onScorte(scorte - 1)} aria-label="Togli una Scorta" disabled={scorte <= 0}>−</button>
           <button className="ghost" onClick={() => onScorte(scorte + 1)} aria-label="Aggiungi una Scorta" disabled={scorte >= 5}>+</button>
         </div>
@@ -125,7 +125,7 @@ function SceneBar({ scene, sceneVow, tracks, onSave }) {
   }
   return (
     <div className="scene-bar">
-      <span className="label" style={{ margin: 0 }}>Scena</span>
+      <span className="label">Scena</span>
       <span className="grow">{scene.scena || <span className="muted">nessuna scena</span>}{sceneVow && <> · collegata al voto <b>{sceneVow.nome}</b></>}</span>
       {scene.scena && <button className="link" onClick={() => open({ scena: scene.scena, voto: scene.scena_voto ?? null })}>Modifica</button>}
       <button className="ghost small" onClick={() => open({ nuova: true, scena: '', voto: null })}>+ Nuova scena</button>
@@ -161,7 +161,7 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
       <SceneBar scene={scene} sceneVow={sceneVow} tracks={tracks} onSave={act.saveParty} />
       <p className="label">Mossa</p>
       <div className="chips">{ACTION_MOVES.map((m) => <button key={m.name} className="chip" aria-pressed={m.name === move} onClick={() => pickMove(m.name)}>{m.name}</button>)}</div>
-      <div className="row" style={{ gap: 24, alignItems: 'flex-start' }}>
+      <div className="cols">
         <div>
           <p className="label">Statistica</p>
           <div className="chips">{Object.keys(STATS).map((k) => (
@@ -267,8 +267,8 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
       )}
       {options.length > 0 && <>
         <p className="label">Applica alla scheda</p>
-        <div className="chips">{options.map(([label, fx, off]) => (
-          <button key={label} className="chip" disabled={off || done.includes(label)}
+        <div className="row">{options.map(([label, fx, off]) => (
+          <button key={label} className="ghost small" disabled={off || done.includes(label)}
             onClick={() => (fx ? apply(label, fx) : (() => { const t = TABLES['Pagare il prezzo'](d); apply(label, () => {}, `, ${t.dice}: ${t.text}`); })())}>
             {label}{done.includes(label) ? ' ✓' : ''}</button>
         ))}</div>
@@ -287,7 +287,7 @@ function SceneVow({ t }) {
       <Boxes segmenti={t.segmenti} />
       {t.minaccia !== null && <>
         <div className="meter"><span>Minaccia</span><Segs n={t.minaccia_segmenti} threat /><span>{t.minaccia_segmenti}/6</span></div>
-        <p className="small-text">{t.minaccia}</p>
+        <p>{t.minaccia}</p>
       </>}
     </section>
   );
@@ -325,7 +325,7 @@ function LogEntry({ row, mine, onChallenge }) {
   if (r.pending) {
     return (
       <li className="pending">{meta}{row.move}: {r.kind === 'action' ? `punteggio azione ${pendingScore(r)}` : `${r.clocks} orologi`}, in attesa della sfida.
-        {!mine && <button className="small" style={{ marginLeft: 8 }} onClick={onChallenge}>Tira la sfida</button>}
+        {!mine && <button className="small" onClick={onChallenge}>Tira la sfida</button>}
       </li>
     );
   }
@@ -345,7 +345,7 @@ export function Oracolo({ rolls, me, act }) {
     <div className="two-col">
       <section>
         <h2 className="section-title">Chiedi all'oracolo</h2>
-        <label style={{ flexDirection: 'column', alignItems: 'stretch' }}>Domanda
+        <label>Domanda
           <input value={question} placeholder="Il capo di Oxenfurt ha visto qualcosa nel bosco?" onChange={(e) => setQuestion(e.target.value)} /></label>
         <p className="label">Probabilità</p>
         <div className="chips">{act.ODDS.map((o) => <button key={o.key} className="chip" aria-pressed={o.key === odds} onClick={() => setOdds(o.key)}>{o.label}</button>)}</div>
@@ -363,15 +363,15 @@ export function Oracolo({ rolls, me, act }) {
       </section>
       <section>
         <h2 className="section-title">Tabelle</h2>
-        <div className="chips">{Object.keys(TABLES).map((name) => (
-          <button key={name} className="chip" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
+        <div className="row">{Object.keys(TABLES).map((name) => (
+          <button key={name} className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
         ))}</div>
         {lastTable && (
           <div className="answer">
             <div><p className="muted small-text">{lastTable.player_name} · {lastTable.result.name} · {lastTable.result.dice}</p><p>{lastTable.result.text}</p></div>
           </div>
         )}
-        <p className="muted small-text" style={{ marginTop: 10 }}>Le tabelle vengono dal Google Doc. Ogni risultato finisce anche nel registro, visibile a tutti.</p>
+        <p className="muted small-text">Le tabelle vengono dal Google Doc. Ogni risultato finisce anche nel registro, visibile a tutti.</p>
       </section>
     </div>
   );

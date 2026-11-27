@@ -217,14 +217,14 @@ function Schede({ chars, uid, me, tracks, onSave, onAdd }) {
   const vow = c && tracks.find((t) => t.tipo === 'voto' && t.personaggio === c.id && !t.chiuso);
   const mine = c?.owner === uid;
   return (
-    <div>
-      <div className="row" style={{ marginBottom: 12 }}>
+    <div className="page">
+      <div className="row">
         {live.map((x) => <button key={x.id} className="chip" aria-pressed={x.id === c?.id} onClick={() => setSel(x.id)}>{x.data.nome} · {x.data.giocatore}</button>)}
         <button className="link" onClick={onAdd}>+ nuovo personaggio</button>
         {gone.length > 0 && <select aria-label="Archiviati" value="" onChange={(e) => setSel(Number(e.target.value))}>
           <option value="" disabled>Archiviati ({gone.length})</option>
           {gone.map((x) => <option key={x.id} value={x.id}>{x.data.nome}</option>)}</select>}
-        {c && <span className="muted small-text" style={{ marginLeft: 'auto' }}>{mine ? 'È il tuo personaggio: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
+        {c && <span className="muted small-text push">{mine ? 'È il tuo personaggio: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
       </div>
       {c && <Sheet key={c.id} c={c.data} readOnly={!mine || !!c.data.archiviato} vow={vow} onChange={(data) => onSave(c.id, data)} onArchive={() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) })} />}
       {c?.data.archiviato && mine && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>}
