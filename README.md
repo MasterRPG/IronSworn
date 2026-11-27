@@ -47,6 +47,10 @@ Per attivarla: nel SQL Editor esegui `supabase/007_sfida.sql`.
 
 Per attivarla: esegui `supabase/008_note.sql` nel SQL Editor.
 
+## Tavolo come nel mockup
+
+Tema scuro del mockup. Il *Tavolo* ha tre colonne: la compagnia (statistiche, Salute, Spirito, slancio, Scorte del gruppo con − e +), il tiro (scena, mossa, statistica e bonus a pulsanti, dadi che rotolano, risultato con il testo della mossa dal Google Doc e i pulsanti "Applica alla scheda") e il voto della scena con il registro. In alto si vede chi è collegato. Nuova scheda *Oracolo e tabelle*, con tutte le tabelle del Google Doc (`src/rules/texts.js`).
+
 ## Archiviare un personaggio
 
 Nella propria scheda, *Archivia il personaggio (morte o ritiro)* chiede conferma e lo sposta in fondo a *Schede*, tra gli archiviati, in sola lettura e fuori dal gioco (scontri, voti, "Sono…"). Chi lo giocava può riportarlo in gioco. Per un personaggio nuovo: *+ nuovo personaggio*, che diventa tuo.
