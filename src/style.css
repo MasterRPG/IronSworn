@@ -91,3 +91,6 @@ fieldset:disabled .link, fieldset:disabled .clock button, fieldset:disabled .tra
 .page { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
 .page summary { cursor: pointer; }
 .page input, .page textarea { width: 100%; margin: 6px 0; }
+
+button.link.danger { color: var(--miss); margin-top: 12px; }
+.archived { margin-top: 16px; }

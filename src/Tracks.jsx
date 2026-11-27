@@ -62,7 +62,7 @@ function Track({ t, chars, onSave, onDelete, onFinish }) {
         ))}
       {t.tipo === 'scontro' && (
         <div className="track-row">
-          {chars.map((c) => {
+          {chars.filter((c) => !c.data.archiviato).map((c) => {
             const pos = t.posizioni[c.id] ?? 'vantaggio';
             return (
               <button key={c.id} type="button" className={`pos ${pos}`}
@@ -107,7 +107,7 @@ function NewTrack({ chars, onCreate }) {
       {f.tipo === 'voto' && <>
         <label>Di chi <select value={f.personaggio} onChange={(e) => set({ personaggio: e.target.value })}>
           <option value="">del gruppo</option>
-          {chars.map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>
+          {chars.filter((c) => !c.data.archiviato).map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>
         <label>Giurato su <input required value={f.ferro} placeholder="la lama, un anello, un chiodo…" onChange={(e) => set({ ferro: e.target.value })} /></label>
         <label>Minaccia <input value={f.minaccia} placeholder="facoltativa" onChange={(e) => set({ minaccia: e.target.value })} /></label>
       </>}

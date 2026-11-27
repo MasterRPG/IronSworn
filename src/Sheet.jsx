@@ -57,7 +57,7 @@ export default function Sheet({ c, readOnly, onChange }) {
   return (
     <details className="sheet">
       <summary>
-        <b>{c.nome || 'Senza nome'}</b> {c.giocatore && <span className="muted">({c.giocatore})</span>}
+        <b>{c.nome || 'Senza nome'}</b> {c.archiviato && <span className="muted">archiviato il {c.archiviato}</span>} {c.giocatore && <span className="muted">({c.giocatore})</span>}
         <span className="summary-stats">
           Fis {eff.fisico} · Ani {eff.animo} · Ing {eff.ingegno} · Slancio {c.slancio > 0 ? '+' : ''}{c.slancio} · Salute {c.salute}/6 · Spirito {c.spirito}/6
         </span>
@@ -120,6 +120,10 @@ export default function Sheet({ c, readOnly, onChange }) {
           <button type="button" className="link" onClick={() => set({ asset: [...c.asset, { tipo: 'Altro', testo: '', stato: 'OK' }] })}>+ asset</button>
         </div>
       </div>
+      {!c.archiviato && (
+        <button type="button" className="link danger" onClick={() => confirm(`Archiviare ${c.nome || 'questo personaggio'}?\n\nUsalo per morte o ritiro: il personaggio esce dal gioco e finisce tra gli archiviati, in sola lettura. Potrai riportarlo in gioco.`) && set({ archiviato: new Date().toISOString().slice(0, 10) })}>
+          Archivia il personaggio (morte o ritiro)</button>
+      )}
       </fieldset>
     </details>
   );
