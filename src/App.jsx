@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { actionRoll, progressRoll, oracle, rollDice, ODDS, OUTCOMES } from './rules/dice.js';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
+import { LIMITS, clamp, effectiveStats, emptyCharacter } from './rules/character.js';
+import Sheet from './Sheet.jsx';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -42,29 +44,59 @@ function Login() {
   );
 }
 
-function Table({ session }) {
-  const [rolls, setRolls] = useState([]);
-  const [name, setName] = useState(() => localStorage.getItem('nome') || '');
-  const [error, setError] = useState('');
-
+// Tiene una tabella Supabase sincronizzata in tempo reale (insert e update).
+function useLive(table, query, setError) {
+  const [rows, setRows] = useState([]);
   useEffect(() => {
-    supabase.from('rolls').select('*').order('id', { ascending: false }).limit(100)
-      .then(({ data, error }) => (error ? setError(error.message) : setRolls(data)));
-    const channel = supabase.channel('rolls')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rolls' },
-        ({ new: row }) => setRolls((rs) => (rs.some((r) => r.id === row.id) ? rs : [row, ...rs])))
+    query(supabase.from(table).select('*')).then(({ data, error }) => (error ? setError(error.message) : setRows(data)));
+    const channel = supabase.channel(table)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, ({ new: row }) => setRows((rs) => upsert(rs, row)))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [table]);
+  return [rows, setRows];
+}
+const upsert = (rs, row) => (rs.some((r) => r.id === row.id) ? rs.map((r) => (r.id === row.id ? row : r)) : [row, ...rs]);
+
+function Table({ session }) {
+  const [error, setError] = useState('');
+  const [rolls, setRolls] = useLive('rolls', (q) => q.order('id', { ascending: false }).limit(100), setError);
+  const [chars, setChars] = useLive('characters', (q) => q.order('id'), setError);
+  const [party, setParty] = useLive('party', (q) => q, setError);
+  const [myId, setMyId] = useState(() => Number(localStorage.getItem('personaggio')) || null);
+  const me = chars.find((c) => c.id === myId);
+  const scorte = party[0]?.scorte ?? 5;
+
+  const pick = (id) => { setMyId(id); localStorage.setItem('personaggio', String(id)); };
+
+  // shortcut: ultima scrittura vince sull'intera scheda; se due persone modificano la stessa scheda nello stesso istante, una modifica si perde.
+  const saveChar = async (id, data) => {
+    setChars((cs) => cs.map((c) => (c.id === id ? { ...c, data } : c)));
+    const { error } = await supabase.from('characters').update({ data, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) setError(error.message);
+  };
+  const addChar = async () => {
+    const { data, error } = await supabase.from('characters').insert({ data: { ...emptyCharacter(), nome: 'Nuovo personaggio' } }).select().single();
+    if (error) return setError(error.message);
+    setChars((cs) => upsert(cs, data));
+  };
+  const saveScorte = async (v) => {
+    setParty([{ id: 1, scorte: v }]);
+    const { error } = await supabase.from('party').update({ scorte: v }).eq('id', 1);
+    if (error) setError(error.message);
+  };
 
   // shortcut: i dadi si tirano nel browser di chi tira; spostarli sul server se tra voi serve garanzia contro i trucchi.
   const save = async (move, result) => {
-    if (!name.trim()) return setError('Scrivi il nome del tuo personaggio prima di tirare.');
-    localStorage.setItem('nome', name.trim());
-    const { data, error } = await supabase.from('rolls').insert({ player_name: name.trim(), move, result }).select().single();
+    if (!me) return setError('Scegli il tuo personaggio in alto prima di tirare.');
+    const { data, error } = await supabase.from('rolls').insert({ player_name: me.data.nome, move, result }).select().single();
     if (error) return setError(error.message);
     setError('');
-    setRolls((rs) => (rs.some((r) => r.id === data.id) ? rs : [data, ...rs]));
+    setRolls((rs) => upsert(rs, data));
+  };
+  const burn = async (r) => {
+    await save(r.move, { kind: 'burn', of: r.id, outcome: r.result.burn.outcome });
+    if (me) saveChar(me.id, { ...me.data, slancio: r.result.burn.newMomentum });
   };
 
   const burned = new Set(rolls.filter((r) => r.result.kind === 'burn').map((r) => r.result.of));
@@ -75,52 +107,56 @@ function Table({ session }) {
     <main>
       <header>
         <h1>Ironsworn</h1>
-        <label>Personaggio <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} /></label>
+        <label>Sono <select value={myId ?? ''} onChange={(e) => pick(Number(e.target.value))}>
+          <option value="" disabled>scegli…</option>
+          {chars.map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>
+        <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveScorte(clamp(e.target.value, LIMITS.scorte))} /></label>
         <button className="link" onClick={() => supabase.auth.signOut()}>Esci</button>
       </header>
       {error && <p role="alert" className="error">{error}</p>}
       <div className="panels">
-        <ActionPanel onRoll={save} />
+        <ActionPanel me={me} scorte={scorte} onRoll={save} />
         <ProgressPanel onRoll={save} />
         <OraclePanel onRoll={save} />
       </div>
       <h2>Registro</h2>
       <ol className="log">
-        {rolls.map((r) => (
-          <LogEntry key={r.id} row={r} canBurn={r.id === lastMine && !burned.has(r.id)}
-            onBurn={() => save(r.move, { kind: 'burn', of: r.id, outcome: r.result.burn.outcome })} />
+        {rolls.slice(0, 20).map((r) => (
+          <LogEntry key={r.id} row={r} canBurn={r.id === lastMine && !burned.has(r.id)} onBurn={() => burn(r)} />
         ))}
       </ol>
+      <h2>Schede</h2>
+      {chars.map((c) => <Sheet key={c.id} c={c.data} onChange={(data) => saveChar(c.id, data)} />)}
+      <button className="link" onClick={addChar}>+ nuovo personaggio</button>
     </main>
   );
 }
 
 const num = (set) => (e) => set(Number(e.target.value));
 
-function ActionPanel({ onRoll }) {
+function ActionPanel({ me, scorte, onRoll }) {
   const [move, setMove] = useState(ACTION_MOVES[1].name);
   const [statKey, setStatKey] = useState('fisico');
-  const [stat, setStat] = useState(2);
   const [adds, setAdds] = useState(0);
-  const [momentum, setMomentum] = useState(2);
   const stats = ACTION_MOVES.find((m) => m.name === move).stats;
+  const values = me ? { ...effectiveStats(me.data), scorte } : null;
+  const momentum = me?.data.slancio ?? 2;
   const pickMove = (e) => {
     setMove(e.target.value);
     const allowed = ACTION_MOVES.find((m) => m.name === e.target.value).stats;
     if (!allowed.includes(statKey)) setStatKey(allowed[0]);
   };
-  const roll = () => onRoll(move, { ...actionRoll({ stat, adds, momentum }, rollDice.action()), statName: STATS[statKey] });
+  const roll = () => onRoll(move, { ...actionRoll({ stat: values[statKey], adds, momentum }, rollDice.action()), statName: STATS[statKey] });
   return (
     <section>
       <h2>Tiro azione</h2>
       <label>Mossa <select value={move} onChange={pickMove}>{ACTION_MOVES.map((m) => <option key={m.name}>{m.name}</option>)}</select></label>
       <label>Statistica <select value={statKey} onChange={(e) => setStatKey(e.target.value)}>
-        {stats.map((s) => <option key={s} value={s}>{STATS[s]}</option>)}</select>
-        <input type="number" min={0} max={statKey === 'scorte' ? 5 : 4} value={stat} onChange={num(setStat)} aria-label="Valore" />
+        {stats.map((s) => <option key={s} value={s}>{STATS[s]}{values ? ` (${values[s]})` : ''}</option>)}</select>
       </label>
       <label>Bonus <input type="number" min={0} max={9} value={adds} onChange={num(setAdds)} /></label>
-      <label>Slancio <input type="number" min={-6} max={10} value={momentum} onChange={num(setMomentum)} /></label>
-      <button onClick={roll}>Tira</button>
+      <p className="muted">Slancio {momentum > 0 ? '+' : ''}{momentum}, dalla scheda.</p>
+      <button onClick={roll} disabled={!me}>Tira</button>
     </section>
   );
 }

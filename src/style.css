@@ -26,3 +26,24 @@ button.small { margin-left: 8px; padding: 2px 8px; font-size: .9em; }
 .log .weak b:last-of-type { color: var(--weak); }
 .log .miss b:last-of-type { color: var(--miss); }
 .error { color: var(--miss); }
+.muted { color: var(--muted); }
+.warn { color: var(--weak); }
+header label { margin: 0; }
+.sheet { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.sheet summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.summary-stats { color: var(--muted); font-size: .9em; margin-left: auto; }
+.sheet-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-top: 12px; }
+.sheet-grid .wide { grid-column: 1 / -1; }
+.sheet-grid h4 { margin: 8px 0 4px; }
+.sheet-grid input:not([type=number]):not([type=checkbox]), .sheet-grid textarea { width: 100%; margin: 2px 0; }
+.sheet-grid label input:not([type=number]):not([type=checkbox]), .sheet-grid label select { flex: 1; min-width: 0; }
+textarea { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); resize: vertical; }
+label.col { flex-direction: column; align-items: stretch; }
+label.inline { justify-content: flex-start; margin: 0; }
+.asset { display: grid; grid-template-columns: 8em 1fr auto auto; gap: 8px; align-items: center; margin: 4px 0; }
+.asset.broken textarea { text-decoration: line-through; color: var(--muted); }
+@media (max-width: 600px) { .asset { grid-template-columns: 1fr 1fr; } .asset textarea { grid-column: 1 / -1; } }
+.clock { display: inline-flex; gap: 3px; }
+.clock button { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 2px solid var(--muted); background: transparent; }
+.clock button.on { background: var(--miss); border-color: var(--miss); }
+button:disabled { opacity: .5; cursor: not-allowed; }
