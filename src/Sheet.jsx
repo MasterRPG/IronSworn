@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ASSET_TYPES, LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { completeClocks } from './rules/progress.js';
+import Lightbox from './Lightbox.jsx';
 import { Boxes, Segs } from './Tavolo.jsx';
 
 // Campo di testo che salva quando lo lasci, non a ogni tasto.
@@ -18,14 +19,62 @@ export const STATI = ['OK', 'Rotto', 'Perso'];
 const STAT_NAMES = { fisico: 'Fisico', animo: 'Animo', ingegno: 'Ingegno' };
 const signed = (n) => (n > 0 ? `+${n}` : `${n}`);
 
-// Carica o toglie l'immagine del personaggio.
+// Carica o toglie l'immagine del personaggio; prima di caricarla si sceglie inquadratura e zoom.
 function Portrait({ has, onFile, onRemove }) {
   const ref = useRef(null);
+  const [img, setImg] = useState(null);
+  const [file, setFile] = useState(null);
+  const pick = (f) => { const i = new Image(); i.onload = () => setImg(i); i.src = URL.createObjectURL(f); setFile(f); };
   return (
-    <div className="row small-text">
-      <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) onFile(e.target.files[0]); e.target.value = ''; }} />
-      <button className="link" onClick={() => ref.current.click()}>{has ? 'Cambia immagine' : '+ Immagine del personaggio'}</button>
-      {has && <button className="link danger" onClick={() => confirm('Togliere l\'immagine del personaggio?') && onRemove()}>Togli immagine</button>}
+    <div className="stack">
+      <div className="row small-text">
+        <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) pick(e.target.files[0]); e.target.value = ''; }} />
+        <button className="link" onClick={() => ref.current.click()}>{has ? 'Cambia immagine' : '+ Immagine del personaggio'}</button>
+        {has && <button className="link danger" onClick={() => confirm('Togliere l\'immagine del personaggio?') && onRemove()}>Togli immagine</button>}
+      </div>
+      {img && <Crop img={img} onCancel={() => setImg(null)} onSave={(blob) => { setImg(null); onFile(blob, file); }} />}
+    </div>
+  );
+}
+
+// Disegna l'immagine nel quadrato: "cover" moltiplicato per lo zoom, spostata di (x, y) in frazioni del lato.
+export function drawCrop(ctx, img, size, { zoom, x, y }) {
+  const k = Math.max(size / img.width, size / img.height) * zoom;
+  const w = img.width * k, h = img.height * k;
+  ctx.drawImage(img, (size - w) / 2 + x * size, (size - h) / 2 + y * size, w, h);
+}
+// Lo spostamento massimo perché l'immagine copra sempre tutto il quadrato.
+export const limitCrop = (img, { zoom, x, y }) => {
+  const k = Math.max(1 / img.width, 1 / img.height) * zoom;
+  const mx = (img.width * k - 1) / 2, my = (img.height * k - 1) / 2;
+  return { zoom, x: Math.max(-mx, Math.min(mx, x)), y: Math.max(-my, Math.min(my, y)) };
+};
+
+function Crop({ img, onCancel, onSave }) {
+  const ref = useRef(null);
+  const [v, setV] = useState({ zoom: 1, x: 0, y: 0 });
+  const drag = useRef(null);
+  useEffect(() => { const c = ref.current, ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height); drawCrop(ctx, img, c.width, v); }, [img, v]);
+  const move = (e) => {
+    if (!drag.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const [sx, sy, start] = drag.current;
+    setV(limitCrop(img, { ...start, x: start.x + (e.clientX - sx) / r.width, y: start.y + (e.clientY - sy) / r.height }));
+  };
+  const save = () => {
+    const out = document.createElement('canvas'); out.width = out.height = 600;
+    drawCrop(out.getContext('2d'), img, 600, v);
+    out.toBlob((b) => onSave(b), 'image/jpeg', 0.9);
+  };
+  return (
+    <div className="form">
+      <b>Inquadratura</b>
+      <canvas ref={ref} className="crop" width={600} height={600} aria-label="Trascina per spostare l'immagine"
+        onPointerDown={(e) => { ref.current.setPointerCapture(e.pointerId); drag.current = [e.clientX, e.clientY, v]; }}
+        onPointerMove={move} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }} />
+      <label>Zoom<input type="range" min="1" max="4" step="0.05" value={v.zoom} onChange={(e) => setV(limitCrop(img, { ...v, zoom: Number(e.target.value) }))} /></label>
+      <p className="muted small-text">Trascina l'immagine per scegliere cosa resta nel riquadro.</p>
+      <div className="actions"><button className="ghost" onClick={onCancel}>Annulla</button><button onClick={save}>Usa questa immagine</button></div>
     </div>
   );
 }
@@ -58,8 +107,9 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive, onUpload 
     <div className="sheet-cols">
       <section>
         <div className="sheet-head">
-          {c.immagine && <img className="portrait" src={c.immagine} alt={`Ritratto di ${c.nome}`} />}
-          {ed && onUpload && <Portrait has={!!c.immagine} onFile={async (f) => { const url = await onUpload(f); if (url) set({ immagine: url }); }} onRemove={() => set({ immagine: undefined })} />}
+          {c.immagine && <Lightbox className="portrait" src={c.immagine} full={c.immagine_intera} alt={`Ritratto di ${c.nome}`} />}
+          {ed && onUpload && <Portrait has={!!c.immagine} onRemove={() => set({ immagine: undefined, immagine_intera: undefined })}
+            onFile={async (crop, original) => { const [a, b] = await Promise.all([onUpload(crop), onUpload(original)]); if (a) set({ immagine: a, immagine_intera: b ?? undefined }); }} />}
           {ed ? <Text className="sheet-name" value={c.nome} aria-label="Nome" onSave={(nome) => nome.trim() && set({ nome })} /> : <h2 className="sheet-name">{c.nome}</h2>}
           <p className="muted small-text">{c.mestiere || 'mestiere?'} · giocato da {c.giocatore || '?'}{c.archiviato ? ` · archiviato il ${c.archiviato}` : ''}</p>
         </div>
