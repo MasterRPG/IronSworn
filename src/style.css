@@ -231,3 +231,7 @@ fieldset.plain { border: 0; padding: 0; min-width: 0; }
 .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
 .pc.with-img .img-button { height: 100%; }
 .pc.with-img .meter > span:first-child { width: 48px; }
+
+/* Diario: registro completo della scena, senza scorrimento; gli avanzamenti in blu */
+.log.full { max-height: none; }
+.log li.track { color: var(--strong-text); }
