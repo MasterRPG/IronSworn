@@ -38,9 +38,9 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
   const set = (patch) => onSave(t.id, patch);
   const isScene = scene.scena_voto === t.id;
   return (
-    <article className={`card track-card${t.chiuso ? ' closed' : ''}`}>
+    <article className={`card track-card kind-${kindOf(t)}${t.chiuso ? ' closed' : ''}`}>
       <div className="row">
-        <span className="tag">{t.tipo === 'voto' ? (owner ? 'Voto personale' : 'Voto di gruppo') : KINDS[t.tipo]}</span>
+        <span className="tag kind-tag">{t.tipo === 'voto' ? (owner ? 'Voto personale' : 'Voto di gruppo') : KINDS[t.tipo]}</span>
         <span className="muted small-text">{t.grado} · {RANK_STEP[t.grado]} segmenti</span>
         {owner && <span className="muted small-text push">{owner.data.nome}</span>}
       </div>
