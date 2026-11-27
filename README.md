@@ -25,6 +25,15 @@ Per attivarla su un progetto già in linea: nel SQL Editor esegui `supabase/002_
 
 Per attivarla: nel SQL Editor esegui `supabase/004_proprietari.sql`.
 
+## Voti e tracciati
+
+- Scheda "Voti e tracciati": si creano, modificano, chiudono ed eliminano voti (con l'oggetto di ferro e una minaccia facoltativa), viaggi, scontri e luoghi pericolosi.
+- Tracciato di 10 orologi da 4 segmenti; "Raggiungere una tappa" / "Segna progresso" riempie 8, 4 o 2 segmenti secondo il grado. "Portare a termine" tira contro gli orologi completi e mostra il risultato nel registro. "Riprovare" tiene il primo orologio e alza il grado.
+- Minaccia da 6 segmenti sul voto, con "+1 minaccia"; nello scontro ognuno è In vantaggio o In difficoltà.
+- Nel Tavolo, la scena in corso è collegata a un voto: dopo un tuo fallimento l'app propone +1 minaccia, dopo un successo pieno propone la tappa.
+
+Per attivarla: nel SQL Editor esegui `supabase/005_voti.sql`, poi `supabase/006_import_voti.sql` per i voti del foglio.
+
 ## Messa in linea (una volta sola)
 
 1. **Supabase.** Crea un account e un progetto gratuito su supabase.com.
