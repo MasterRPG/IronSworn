@@ -214,9 +214,22 @@ function Table({ session }) {
     if (e2) return setError(e2.message);
     if (scene.scena) log([{ kind: 'scene', scena: scene.scena, voto: tracks.find((t) => t.id === scene.scena_voto)?.nome ?? null, continua: true }]);
   };
-  const deleteSession = async (id) => {
-    const { error } = await supabase.from('sessions').delete().eq('id', id);
+  // Riaprire (solo l'ultima): le righe tornano al Tavolo. Eliminare: via anche le sue righe dal registro.
+  const deleteSession = async (s, withRows) => {
+    if (withRows) {
+      const from = sessions.reduce((m, x) => (x.fino_a < s.fino_a ? Math.max(m, x.fino_a) : m), 0);
+      const { error } = await supabase.from('rolls').delete().gt('id', from).lte('id', s.fino_a);
+      if (error) return setError(error.message);
+      setRolls((rs) => rs.filter((r) => r.id <= from || r.id > s.fino_a));
+    }
+    const { error } = await supabase.from('sessions').delete().eq('id', s.id);
     if (error) setError(error.message);
+  };
+  const deleteChar = async (id) => {
+    const { error } = await supabase.from('characters').delete().eq('id', id);
+    if (error) return setError(error.message);
+    setChars((cs) => cs.filter((c) => c.id !== id));
+    setTracks((ts) => ts.filter((t) => t.personaggio !== id));
   };
   const note = (testo) => save('Racconto', { kind: 'note', testo });
   const ask = (odds, question) => save("Chiedere all'oracolo", oracle({ odds, question }, rollDice.oracle()));
@@ -259,13 +272,14 @@ function Table({ session }) {
       </div>}
       {tab === 'note' && <Pages pages={pages} groups={[['nota', 'Note', '+ Nuova nota']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} onUpload={uploadImage} />}
       {tab === 'diario' && <Diario sessions={sessions} onDelete={admin ? deleteSession : null} />}
-      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={admin} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
+      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={admin} onDelete={deleteChar} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
     </main>
   );
 }
 
 // Una scheda alla volta, con le linguette dei personaggi; gli archiviati in fondo.
-function Schede({ chars, uid, admin, me, tracks, onSave, onAdd, onUpload }) {
+function Schede({ chars, uid, admin, me, tracks, onSave, onAdd, onUpload, onDelete }) {
+  const [del, setDel] = useState(null); // id del personaggio da eliminare
   const [sel, setSel] = useState(me?.id ?? chars[0]?.id);
   const c = chars.find((x) => x.id === sel) ?? chars[0];
   const live = chars.filter((x) => !x.data.archiviato);
@@ -284,7 +298,12 @@ function Schede({ chars, uid, admin, me, tracks, onSave, onAdd, onUpload }) {
         {c && <span className="muted small-text push">{mine ? 'È il tuo personaggio: puoi modificarlo.' : admin ? 'Sei l\'amministratore: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
       </div>
       {c && <Sheet key={c.id} c={c.data} readOnly={!ed || !!c.data.archiviato} vow={vow} onUpload={onUpload} onChange={(data) => onSave(c.id, data)} onArchive={admin && (() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) }))} />}
-      {c?.data.archiviato && admin && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>}
+      {c?.data.archiviato && admin && del !== c.id && <div className="row">
+        <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>
+        <button className="link danger" onClick={() => setDel(c.id)}>Elimina per sempre</button></div>}
+      {c?.data.archiviato && admin && del === c.id && <div className="offer"><span>Eliminare per sempre {c.data.nome}, con la scheda e i suoi voti personali? Non si può annullare.</span>
+        <button className="ghost small" onClick={() => setDel(null)}>No</button>
+        <button className="small" onClick={() => { onDelete(c.id); setDel(null); setSel(undefined); }}>Elimina</button></div>}
     </div>
   );
 }
