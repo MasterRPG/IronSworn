@@ -309,6 +309,7 @@ function SceneVow({ t }) {
 
 function Log({ rolls, uid, me, act }) {
   const [story, setStory] = useState('');
+  const [ask, setAsk] = useState(false);
   const tell = (e) => {
     e.preventDefault();
     if (!story.trim()) return;
@@ -317,7 +318,10 @@ function Log({ rolls, uid, me, act }) {
   };
   return (
     <section aria-label="Registro">
-      <h2 className="section-title">Registro</h2>
+      <div className="row"><h2 className="section-title grow">Registro</h2>
+        {act.clearLog && rolls.length > 0 && !ask && <button className="link danger" onClick={() => setAsk(true)}>Pulisci</button>}</div>
+      {ask && <div className="offer"><span>Cancellare tutto il registro ({rolls.length > 99 ? 'almeno 100 righe' : rolls.length === 1 ? '1 riga' : `${rolls.length} righe`})? Non si può annullare.</span>
+        <button className="ghost small" onClick={() => setAsk(false)}>No</button><button className="small" onClick={() => { act.clearLog(); setAsk(false); }}>Cancella tutto</button></div>}
       <form className="story" onSubmit={tell}>
         <input value={story} placeholder="Scrivi una riga di racconto…" aria-label="Riga di racconto" onChange={(e) => setStory(e.target.value)} />
         <button disabled={!me}>Aggiungi</button>
