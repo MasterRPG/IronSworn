@@ -4,7 +4,7 @@ import { Info } from './Layer.jsx';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
-import { MOVE_TEXTS, FINISH_TEXTS, TABLES, TABLE_INFO } from './rules/texts.js';
+import { MOVE_TEXTS, MOVE_TRIGGERS, FINISH_TEXTS, TABLES, TABLE_INFO } from './rules/texts.js';
 import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress, setThreat } from './rules/progress.js';
 import { trackText } from './rules/diario.js';
 
@@ -210,8 +210,10 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
 // Tutto il testo di una mossa: statistiche ammesse e i tre esiti con le scelte.
 function MoveInfo({ move }) {
   const texts = MOVE_TEXTS[move.name];
+  const when = MOVE_TRIGGERS[move.name];
   return <>
-    <p className="muted small-text">Si tira con: {move.stats.map((k) => STATS[k]).join(', ')}</p>
+    <p>{when.text}</p>
+    {when.list && <ul className="info-list">{when.list.map((l) => <li key={l}>{l}</li>)}</ul>}
     {['strong', 'weak', 'miss'].map((o) => (
       <div key={o} className="stack group">
         <p className={`outcome ${o}`}>{OUTCOMES[o]}</p>
@@ -220,6 +222,7 @@ function MoveInfo({ move }) {
           <ul className="info-list">{texts[o].options.map(([label]) => <li key={label}>{label}</li>)}</ul></>}
       </div>
     ))}
+    {when.note && <p className="muted group">{when.note}</p>}
   </>;
 }
 
