@@ -148,3 +148,18 @@ export const TABLES = {
   'Il problema': d10(PROBLEMI),
   'Luogo pericoloso': (d) => { const x = d(10), y = d(10); return { dice: `d10 ${x} + ${y}`, text: `${AMBIENTI[x - 1]}. ${TEMI[y - 1]}.` }; },
 };
+
+// Le tabelle per intero, da leggere nel riquadro "i": [titolo della colonna, righe].
+const numbered = (list) => list.map((t, i) => `${i + 1}. ${t}`);
+const twoD10 = ([a, b]) => [['Primo d10', numbered(a)], ['Secondo d10', numbered(b)]];
+export const TABLE_INFO = {
+  'Pagare il prezzo': [['d100', PREZZO.map(([max, t], i) => `${i ? PREZZO[i - 1][0] + 1 : 1}–${max}. ${t}`)]],
+  'Mosse del nemico': [['d10: il nemico…', numbered(NEMICO)]],
+  Mestieri: [['d10', numbered(MESTIERI)]],
+  'Legami iniziali': [['d10', numbered(LEGAMI)]],
+  Armi: twoD10(ARMI),
+  Strumenti: twoD10(STRUMENTI),
+  Ricordi: twoD10(RICORDI),
+  'Il problema': [['d10', numbered(PROBLEMI)]],
+  'Luogo pericoloso': [['Ambiente, primo d10', numbered(AMBIENTI)], ['Tema, secondo d10', numbered(TEMI)]],
+};
