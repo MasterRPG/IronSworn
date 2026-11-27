@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ASSET_TYPES, LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { completeClocks } from './rules/progress.js';
-import { Boxes } from './Tavolo.jsx';
+import { Boxes, Segs } from './Tavolo.jsx';
 
 // Campo di testo che salva quando lo lasci, non a ogni tasto.
 export function Text({ value, onSave, area, ...rest }) {
@@ -56,7 +56,7 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
             <button className="small" onClick={() => { set({ stats: { ...c.stats, [statAsk.s]: statAsk.v } }); setStatAsk(null); }}>Conferma</button>
           </div>
         )}
-        <div className="stat-grid">
+        <div className="stat-grid block">
           {Object.keys(STAT_NAMES).map((s) => (
             <div key={s} className="stat">
               <p className="label">{STAT_NAMES[s]}</p>
@@ -67,22 +67,26 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
             </div>
           ))}
         </div>
+        <div className="block">
         {[['salute', 'Salute'], ['spirito', 'Spirito']].map(([k, label]) => (
-          <div key={k} className="clock-row">
-            <span>{label} {c[k]}/6</span>
-            <span className="segs big" role="img" aria-label={`${label} ${c[k]} su 6`}>{[0, 1, 2, 3, 4, 5].map((i) => <span key={i} className={i < c[k] ? 'seg f' : 'seg'} />)}</span>
-            {ed && <span className="row"><button className="ghost small" aria-label={`Cura ${label}`} onClick={() => set({ [k]: clamp(c[k] - 1, LIMITS.clock) })} disabled={c[k] <= 0}>−</button>
+          <div key={k} className="meter">
+            <span>{label}</span>
+            <Segs n={c[k]} /><span>{c[k]}/6</span>
+            {ed && <span className="row push"><button className="ghost small" aria-label={`Cura ${label}`} onClick={() => set({ [k]: clamp(c[k] - 1, LIMITS.clock) })} disabled={c[k] <= 0}>−</button>
               <button className="ghost small" aria-label={`Danno a ${label}`} onClick={() => set({ [k]: clamp(c[k] + 1, LIMITS.clock) })} disabled={c[k] >= 6}>+</button></span>}
           </div>
         ))}
         {(c.salute >= 4 || c.spirito >= 4) && <p className="warn">Salute o Spirito a 4 o più: non puoi guadagnare slancio.</p>}
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 12 }}><p className="label" style={{ margin: 0 }}>Slancio</p><span className="muted small-text">da −6 a +10 · reset +2</span></div>
+        </div>
+        <div className="block">
+        <p className="label">Slancio <span className="hint">(da −6 a +10 · reset +2)</span></p>
         <div className="momentum" role="img" aria-label={`Slancio ${signed(c.slancio)}`}>
           {Array.from({ length: 17 }, (_, i) => i - 6).map((n) => <span key={n} className={n === c.slancio ? 'on' : ''}>{signed(n)}</span>)}
         </div>
         {ed && <div className="row"><button className="ghost small" onClick={() => set({ slancio: clamp(c.slancio - 1, LIMITS.slancio) })}>−1 slancio</button>
           <button className="ghost small" onClick={() => set({ slancio: clamp(c.slancio + 1, LIMITS.slancio) })}>+1 slancio</button>
           <button className="link" onClick={() => set({ slancio: 2 })}>torna a +2</button></div>}
+        </div>
       </section>
 
       <section>
@@ -91,7 +95,7 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
           const filled = c[k].filter((s) => s.trim());
           return (
             <div key={k} className="block">
-              <p className="label">{label} <span className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>({hint})</span></p>
+              <p className="label">{label} <span className="hint">({hint})</span></p>
               {filled.map((s, i) => <div key={i} className="mark"><span className="n">{i + 1}</span><span>{s}</span><span className="muted small-text">{i === 1 ? `−1 ${k === 'cicatrici' ? 'Fisico' : 'Animo'}` : ''}</span></div>)}
               {filled.length === 0 && <p className="muted small-text">Nessuna.</p>}
               {ed && filled.length < 3 && <AddLine placeholder={ph} label={`Nuov${k === 'cicatrici' ? 'a cicatrice' : 'o orrore'}`}
@@ -102,7 +106,7 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
         })}
         <div className="block">
           <p className="label">Esperienza</p>
-          <p><b>{c.esperienza}</b> / 20 · <span className="muted small-text">asset 3 punti, statistica 6 punti</span></p>
+          <p><b>{c.esperienza}</b> / 20 <span className="muted small-text">· asset 3 punti, statistica 6 punti</span></p>
           <div className="xp" role="img" aria-label={`Esperienza ${c.esperienza} su 20`}>{Array.from({ length: 20 }, (_, i) => <span key={i} className={i < c.esperienza ? 'on' : ''} />)}</div>
           {ed && <div className="row"><button className="ghost small" onClick={() => set({ esperienza: Math.min(20, c.esperienza + 1) })} disabled={c.esperienza >= 20}>+ Segna esperienza</button>
             <button className="ghost small" onClick={() => set({ esperienza: Math.max(0, c.esperienza - 1) })} disabled={c.esperienza <= 0}>− Cancella esperienza</button></div>}
@@ -120,14 +124,14 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
 
       <section>
         <div className="block">
-          <p className="label">Asset <span className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>(nessun limite)</span></p>
+          <p className="label">Asset <span className="hint">(nessun limite)</span></p>
           {c.asset.map((a, i) => (
             <div key={i} className={`item${statoOf(a) !== 'OK' ? ' broken' : ''}`}>
               <div className="row"><span className="tag">{a.tipo}</span><span className="grow asset-text">{a.testo}</span><span className={`state s-${statoOf(a)}`}>{statoOf(a)}</span></div>
               {a.nota && <p className="muted small-text">{a.nota}</p>}
               {ed && ask !== `a${i}` && (
-                <div className="row small-text">
-                  <span className="muted">Stato</span>
+                <div className="row">
+                  <span className="muted small-text">Stato</span>
                   {STATI.map((st) => <button key={st} className="chip" aria-pressed={statoOf(a) === st} onClick={() => set({ asset: c.asset.map((x, j) => (j === i ? { ...x, stato: st, rotto: undefined } : x)) })}>{st}</button>)}
                   <span className="grow" />
                   <button className="link" onClick={() => setAssetForm({ i, tipo: a.tipo, testo: a.testo, nota: a.nota ?? '' })}>Modifica</button>
@@ -152,8 +156,8 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
           <p className="label">Legami</p>
           {legami.map((l, i) => (
             <div key={i} className="item">
-              <div>{l.con && <b>{l.con}: </b>}<span>{l.testo}</span></div>
-              {ed && ask !== `l${i}` && <div className="row small-text"><span className="grow" /><button className="link" onClick={() => setBondForm({ i, ...l })}>Modifica</button><button className="link danger" onClick={() => setAsk(`l${i}`)}>Elimina</button></div>}
+              <p>{l.con && <b>{l.con}: </b>}{l.testo}</p>
+              {ed && ask !== `l${i}` && <div className="row"><span className="grow" /><button className="link" onClick={() => setBondForm({ i, ...l })}>Modifica</button><button className="link danger" onClick={() => setAsk(`l${i}`)}>Elimina</button></div>}
               {ask === `l${i}` && <Confirm text={`Eliminare il legame${l.con ? ` con ${l.con}` : ''}?`} onNo={() => setAsk(null)} onYes={() => { set({ legami: legami.filter((_, j) => j !== i) }); setAsk(null); }} />}
             </div>
           ))}
@@ -170,13 +174,14 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
         <div className="block">
           <p className="label">Voto personale</p>
           {vow ? <>
-            <p>{vow.nome} <span className="muted small-text">· {vow.grado}{vow.ferro ? ` · giurato su ${vow.ferro}` : ''}</span></p>
+            <p className="vow-title">{vow.nome}</p>
+            <p className="muted small-text">{vow.grado}{vow.ferro ? ` · giurato su ${vow.ferro}` : ''}</p>
             <Boxes segmenti={vow.segmenti} />
             <p className="muted small-text">{completeClocks(vow.segmenti)} orologi completi su 10 · il progresso si segna da "Voti"</p>
           </> : <p className="muted">Nessuno: si giura da "Voti".</p>}
         </div>
         {ed && onArchive && !c.archiviato && (
-          <button type="button" className="link danger" onClick={() => confirm(`Archiviare ${c.nome || 'questo personaggio'}?\n\nUsalo per morte o ritiro: il personaggio esce dal gioco e finisce tra gli archiviati, in sola lettura. Potrai riportarlo in gioco.`) && onArchive()}>
+          <button type="button" className="link danger group" onClick={() => confirm(`Archiviare ${c.nome || 'questo personaggio'}?\n\nUsalo per morte o ritiro: il personaggio esce dal gioco e finisce tra gli archiviati, in sola lettura. Potrai riportarlo in gioco.`) && onArchive()}>
             Archivia il personaggio (morte o ritiro)</button>
         )}
       </section>
