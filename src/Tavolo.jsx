@@ -5,7 +5,7 @@ import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
 import { MOVE_TEXTS, MOVE_TRIGGERS, FINISH_TEXTS, TABLES, TABLE_INFO } from './rules/texts.js';
-import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress, setThreat } from './rules/progress.js';
+import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress, retry, setThreat } from './rules/progress.js';
 import { trackText } from './rules/diario.js';
 
 // Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
@@ -282,6 +282,10 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
   const [asked, setAsked] = useState(false);
   const offer = mine && sceneVow && r.kind === 'action' && !asked && (
     outcome === 'miss' && sceneVow.minacce.some((m) => m.segmenti < THREAT_SIZE) ? 'threat' : outcome === 'strong' ? 'milestone' : null);
+  // Fallimento nel Portare a termine un voto: Riprovare o Rinunciare (perdita di Spirito, 2 se il voto è Formidabile o Leggendario).
+  const [vowDone, setVowDone] = useState(false);
+  const vowMiss = mine && me && track?.tipo === 'voto' && !track.chiuso && outcome === 'miss' && !vowDone;
+  const giveUp = hard(track) ? 2 : 1;
   const beat = (c) => r.score > c || (burnRow && r.momentum > c);
   return (
     <div className="result">
@@ -327,6 +331,16 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
           {sceneVow.minacce.filter((m) => m.segmenti < THREAT_SIZE).map((m) => (
             <button key={m.id} className="small" onClick={() => { act.saveTrack(sceneVow.id, { minacce: setThreat(sceneVow.minacce, m.id, m.segmenti + 1) }); setAsked(true); }}>{m.nome} ({m.segmenti}/6)</button>
           ))}
+        </div>
+      )}
+      {vowMiss && (
+        <div className="row">
+          <button className="small" onClick={() => { act.saveTrack(track.id, retry(track)); act.note(`${me.data.nome}: Riprovare il voto "${track.nome}"`); setVowDone(true); }}>Riprovare</button>
+          <button className="ghost small" onClick={() => {
+            act.saveTrack(track.id, { chiuso: true });
+            act.saveChar(me.id, { ...c, spirito: clamp(c.spirito - giveUp, LIMITS.clock) }, true);
+            act.note(`${me.data.nome}: Rinunciare al voto "${track.nome}", Subire una perdita di Spirito (${giveUp})`); setVowDone(true);
+          }}>Rinunciare (−{giveUp} Spirito)</button>
         </div>
       )}
       {offer === 'milestone' && (
