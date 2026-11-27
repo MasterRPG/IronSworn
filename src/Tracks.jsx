@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KINDS, RANKS, RANK_STEP, MAX_SEGMENTS, markProgress, completeClocks, retry, addThreat, setThreat } from './rules/progress.js';
+import { KINDS, RANKS, RANK_STEP, MAX_SEGMENTS, markProgress, completeClocks, addThreat, setThreat } from './rules/progress.js';
 import { Boxes, ThreatMeter } from './Tavolo.jsx';
 
 // Le scelte del modulo: un voto è di gruppo o personale; gli altri tracciati sono di tutti.
@@ -46,7 +46,8 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
       </div>
       <p className="vow-title">{t.nome}</p>
       {t.tipo === 'voto' && t.ferro && <p className="muted small-text">Giurato su: {t.ferro}</p>}
-      <Boxes segmenti={t.segmenti} />
+      <div className="row"><Boxes segmenti={t.segmenti} />
+        <button className="ghost small" aria-label="Togli un segmento" title="Togli un segmento" disabled={!t.segmenti} onClick={() => set({ segmenti: t.segmenti - 1 })}>−</button></div>
       <p className="muted small-text">{completeClocks(t.segmenti)} orologi completi su 10</p>
       {t.tipo === 'voto' && t.minacce.map((m) => (
         <div key={m.id} className="threat-box">
@@ -80,11 +81,9 @@ function Track({ t, chars, scene, onSave, onDelete, onFinish, onEdit }) {
       </div>
       {!del && (
         <div className="row">
-          <button className="link" onClick={() => set({ segmenti: Math.max(0, t.segmenti - 1) })}>−1 segmento</button>
-          <button className="link" onClick={() => confirm('Riprovare: tieni solo il primo orologio e alza il grado?') && set(retry(t))}>Riprovare</button>
           <span className="grow" />
           <button className="link" onClick={onEdit}>Modifica</button>
-          <button className="link" onClick={() => set({ chiuso: !t.chiuso })}>{t.chiuso ? 'Riapri' : 'Chiudi'}</button>
+          <button className="link" onClick={() => set({ chiuso: !t.chiuso })}>{t.chiuso ? 'Riapri' : 'Archivia'}</button>
           <button className="link danger" onClick={() => setDel(true)} disabled={isScene} title={isScene ? 'È il voto della scena in corso' : ''}>Elimina</button>
         </div>
       )}
@@ -123,7 +122,7 @@ export default function Tracks({ tracks, chars, me, scene, onSave, onCreate, onD
       {form && <TrackForm form={form} setForm={setForm} chars={live} me={me} onSave={save} />}
       <div className="track-grid">{open.map((t) => <Track key={t.id} t={t} {...props} onEdit={() => edit(t)} />)}</div>
       {open.length === 0 && <p className="muted">Nessun tracciato aperto.</p>}
-      {closed.length > 0 && <details><summary className="label">Chiusi ({closed.length})</summary>
+      {closed.length > 0 && <details><summary className="label">Archiviati ({closed.length})</summary>
         <div className="track-grid">{closed.map((t) => <Track key={t.id} t={t} {...props} onEdit={() => edit(t)} />)}</div></details>}
     </div>
   );
