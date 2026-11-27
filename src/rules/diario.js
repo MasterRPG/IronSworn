@@ -3,13 +3,20 @@ import { KINDS, completeClocks } from './progress.js';
 
 // Le modifiche di un tracciato che finiscono nel registro (non i nomi né le posizioni dello scontro).
 export function trackEvents(t, patch) {
-  const ev = (cosa, da, a) => ({ kind: 'track', trackId: t.id, tipo: t.tipo, nome: patch.nome ?? t.nome, minaccia: patch.minaccia ?? t.minaccia, cosa, da, a });
+  const ev = (cosa, da, a, m) => ({ kind: 'track', trackId: t.id, tipo: t.tipo, nome: patch.nome ?? t.nome, cosa, da, a, ...(m && { minaccia: m.nome, minacciaId: m.id }) });
   const out = [];
   const has = (k) => k in patch && patch[k] !== t[k];
   if (has('segmenti')) out.push(ev('progresso', t.segmenti, patch.segmenti));
   if (has('grado')) out.push(ev('grado', t.grado, patch.grado));
-  if (has('minaccia')) out.push(ev(patch.minaccia === null ? 'minaccia tolta' : 'nuova minaccia'));
-  else if (has('minaccia_segmenti')) out.push(ev('minaccia', t.minaccia_segmenti, patch.minaccia_segmenti));
+  if ('minacce' in patch) {
+    const old = t.minacce ?? [];
+    for (const m of patch.minacce) {
+      const o = old.find((x) => x.id === m.id);
+      if (!o) out.push(ev('nuova minaccia', undefined, undefined, m));
+      else if (o.segmenti !== m.segmenti) out.push(ev('minaccia', o.segmenti, m.segmenti, m));
+    }
+    old.filter((o) => !patch.minacce.some((m) => m.id === o.id)).forEach((o) => out.push(ev('minaccia tolta', undefined, undefined, o)));
+  }
   if (has('chiuso')) out.push(ev(patch.chiuso ? 'chiuso' : 'riaperto'));
   return out;
 }
@@ -51,7 +58,7 @@ export function summary(rows) {
   rows.forEach(({ id, result: r }, i) => {
     if ((r.kind === 'action' || r.kind === 'progress') && !r.pending && r.outcome) esiti[burns.get(id) ?? r.outcome]++;
     if (r.kind !== 'track') return;
-    const key = r.cosa === 'progresso' || r.cosa === 'minaccia' ? `${r.trackId}:${r.cosa}` : i;
+    const key = r.cosa === 'progresso' || r.cosa === 'minaccia' ? `${r.trackId}:${r.cosa}:${r.minacciaId ?? ''}` : i;
     const prev = changes.get(key);
     changes.set(key, prev ? { ...r, da: prev.da } : r);
   });

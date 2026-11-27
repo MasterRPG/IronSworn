@@ -17,3 +17,7 @@ export const retry = ({ segmenti, grado }) => ({
   segmenti: Math.min(segmenti, 4),
   grado: RANKS[Math.min(RANKS.length - 1, RANKS.indexOf(grado) + 1)],
 });
+
+// Minacce di un voto: [{ id, nome, segmenti }], ognuna da 0 a 6.
+export const addThreat = (minacce, nome, segmenti = 0) => [...minacce, { id: Math.max(0, ...minacce.map((m) => m.id)) + 1, nome, segmenti }];
+export const setThreat = (minacce, id, segmenti) => minacce.map((m) => (m.id === id ? { ...m, segmenti: Math.max(0, Math.min(THREAT_SIZE, segmenti)) } : m));

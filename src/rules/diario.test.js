@@ -1,14 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { addThreat, setThreat } from './progress.js';
 import { trackEvents, splitScenes, summary, trackText, charEvents } from './diario.js';
 
-const vow = { id: 7, tipo: 'voto', nome: 'Il pozzo', segmenti: 8, grado: 'Pericoloso', minaccia: 'Il bosco', minaccia_segmenti: 2, chiuso: false };
+const vow = { id: 7, tipo: 'voto', nome: 'Il pozzo', segmenti: 8, grado: 'Pericoloso', minacce: [{ id: 1, nome: 'Il bosco', segmenti: 2 }], chiuso: false };
 
 test('solo le modifiche che contano finiscono nel registro', () => {
   assert.deepEqual(trackEvents(vow, { posizioni: {} }), []);
   assert.deepEqual(trackEvents(vow, { segmenti: 16 }).map((e) => [e.cosa, e.da, e.a]), [['progresso', 8, 16]]);
-  assert.deepEqual(trackEvents(vow, { minaccia: null, minaccia_segmenti: 0 }).map((e) => e.cosa), ['minaccia tolta']);
-  assert.equal(trackEvents(vow, { minaccia_segmenti: 3 })[0].minaccia, 'Il bosco');
+  assert.deepEqual(trackEvents(vow, { minacce: [] }).map((e) => [e.cosa, e.minaccia]), [['minaccia tolta', 'Il bosco']]);
+  const due = addThreat(setThreat(vow.minacce, 1, 3), 'Il lupo');
+  assert.deepEqual(trackEvents(vow, { minacce: due }).map((e) => [e.cosa, e.minaccia, e.a]), [['minaccia', 'Il bosco', 3], ['nuova minaccia', 'Il lupo', undefined]]);
+  assert.deepEqual(due[1], { id: 2, nome: 'Il lupo', segmenti: 0 });
 });
 
 const row = (id, result) => ({ id, result });
