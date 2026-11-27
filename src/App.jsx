@@ -217,7 +217,6 @@ function Table({ session }) {
       </div>}
       {tab === 'note' && <Pages pages={pages} groups={[['nota', 'Note', '+ Nuova nota']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} onUpload={uploadImage} />}
       {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
-      <footer className="credits muted small-text">Questo lavoro è basato su <a href="https://www.ironswornrpg.com">Ironsworn</a>, creato da Shawn Tomkin, e licenziato sotto la <a href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</a>.</footer>
     </main>
   );
 }
