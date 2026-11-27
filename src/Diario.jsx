@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LogEntry } from './Tavolo.jsx';
+import Lightbox from './Lightbox.jsx';
 import { splitScenes, summary, trackText } from './rules/diario.js';
 
 const ESITI = { strong: ['successo pieno', 'successi pieni'], weak: ['successo parziale', 'successi parziali'], miss: ['fallimento', 'fallimenti'] };
@@ -8,10 +9,14 @@ const when = (iso) => new Date(iso).toLocaleDateString('it-IT', { day: 'numeric'
 // Esiti delle mosse e avanzamenti di un gruppo di righe del registro.
 function Recap({ rows }) {
   const { esiti, avanzamenti } = summary(rows);
+  const schede = rows.filter((r) => r.result.kind === 'char');
+  const immagini = rows.flatMap((r) => (r.result.kind === 'image' ? r.result.urls : r.result.url ? [r.result.url] : []));
   const mosse = Object.entries(esiti).filter(([, n]) => n).map(([k, n]) => `${n} ${ESITI[k][n === 1 ? 0 : 1]}`);
   return <>
     {mosse.length > 0 && <p className="small-text muted">Mosse: {mosse.join(' · ')}</p>}
     {avanzamenti.length > 0 && <ul className="choices">{avanzamenti.map((c, i) => <li key={i}>{trackText(c)}</li>)}</ul>}
+    {schede.length > 0 && <ul className="choices sheet-changes">{schede.map(({ id, result: c }) => <li key={id}><b>{c.pg}</b> {c.testo}</li>)}</ul>}
+    {immagini.length > 0 && <div className="log-imgs">{immagini.map((u) => <Lightbox key={u} className="log-img" src={u} />)}</div>}
   </>;
 }
 

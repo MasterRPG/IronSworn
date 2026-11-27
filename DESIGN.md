@@ -69,6 +69,8 @@ La forma dice cosa fa: **rettangolo = azione**, **pillola = scelta**, **testo so
 - **Giallo** (`--weak`): minaccia, avvisi, successo parziale.
 - **Rosso** (`--miss`): danno e fallimento (Salute, Spirito), eliminare.
 - **Verde** (`--online`): collegato, asset OK.
+- **Viola** (`--sheet`): cambi alla scheda nel registro (danni, esperienza, legami, asset).
+- **Registro**: ogni riga ha un'etichetta del tipo (Mossa, Scena, Avanzamento, Minaccia, Scheda, Immagine, Oracolo, Racconto) e un bordo sinistro del colore che le spetta.
 
 ## 7. Tracciati
 

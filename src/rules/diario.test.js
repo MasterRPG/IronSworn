@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { trackEvents, splitScenes, summary, trackText } from './diario.js';
+import { trackEvents, splitScenes, summary, trackText, charEvents } from './diario.js';
 
 const vow = { id: 7, tipo: 'voto', nome: 'Il pozzo', segmenti: 8, grado: 'Pericoloso', minaccia: 'Il bosco', minaccia_segmenti: 2, chiuso: false };
 
@@ -30,4 +30,15 @@ test('divide per scena e somma gli avanzamenti', () => {
   assert.deepEqual(s.esiti, { strong: 0, weak: 1, miss: 0 });
   assert.deepEqual(s.avanzamenti.map((c) => [c.cosa, c.da, c.a]), [['progresso', 8, 24]]);
   assert.match(trackText({ ...vow, ...s.avanzamenti[0] }), /da 8 a 24 segmenti \(6 orologi/);
+});
+
+test('i cambi alla scheda diventano righe leggibili', () => {
+  const o = { nome: 'Karsa', salute: 1, spirito: 0, slancio: 2, esperienza: 3, stats: { fisico: 2, animo: 1, ingegno: 1 },
+    cicatrici: ['', '', ''], orrori: ['', '', ''], legami: [{ con: 'Cassandra', testo: 'Le devo la vita' }], asset: [{ testo: 'Arco', stato: 'OK' }] };
+  assert.deepEqual(charEvents(o, { ...o, aspetto: 'alto' }), []);
+  const n = { ...o, salute: 2, esperienza: 4, cicatrici: ['Occhio sfregiato', '', ''], legami: [], asset: [{ testo: 'Arco', stato: 'Rotto' }, { testo: 'Lancia' }] };
+  assert.deepEqual(charEvents(o, n).map((e) => e.testo), [
+    'Salute da 1/6 a 2/6 (danno)', 'Esperienza da 3 a 4', 'Nuova cicatrice: Occhio sfregiato',
+    'Legame tolto: Cassandra: Le devo la vita', 'Nuovo asset: Lancia', 'Asset «Arco»: Rotto',
+  ]);
 });
