@@ -37,7 +37,7 @@ export default function Pages({ pages, groups, onSave, onCreate, onDelete, onUpl
       ) : page ? (
         <div className="stack group">
           <div className="row"><h2 className="vow-title grow">{page.titolo}</h2>
-            <span className="muted small-text">Modificabile da tutti{page.updated_at ? ` · ultima modifica ${new Date(page.updated_at).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''}</span></div>
+            <span className="muted small-text">{page.updated_at ? `Ultima modifica ${new Date(page.updated_at).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' })}` : ''}</span></div>
           <p className="page-text">{page.testo || <span className="muted">Pagina vuota.</span>}</p>
           {onUpload && <Media page={page} onSave={onSave} onUpload={onUpload} />}
           {!del && <div className="row group"><button className="ghost small" onClick={() => setForm({ id: page.id, tipo: page.tipo, titolo: page.titolo, testo: page.testo ?? '' })}>Modifica</button>

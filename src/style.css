@@ -236,10 +236,16 @@ fieldset.plain { border: 0; padding: 0; min-width: 0; }
 .layer-head { display: flex; gap: var(--sp-2); align-items: center; padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); cursor: move; touch-action: none; font-size: var(--fs-md); }
 .layer-body { display: grid; gap: var(--sp-2); align-content: start; padding: var(--sp-4); overflow-y: auto; }
 .layer-img { width: 100%; max-height: calc(100vh - 180px); object-fit: contain; border-radius: var(--r-md); }
-.info { width: var(--sp-5); min-height: var(--sp-5); height: var(--sp-5); padding: 0; border-radius: var(--r-pill); background: var(--card2); color: var(--muted); border-color: var(--line2); font: 600 var(--fs-xs)/1 var(--font); text-transform: none; letter-spacing: 0; vertical-align: middle; }
-.info:hover:not(:disabled) { background: var(--line); border-color: var(--muted); color: var(--fg); }
-.label .info { margin-left: var(--sp-2); }
-.with-info { display: inline-flex; gap: var(--sp-1); align-items: center; }
+/* Voce con "i": un solo controllo diviso in due, la voce a sinistra e la "i" a destra dopo un filetto */
+.with-info { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+.with-info.rect { border-color: var(--line2); border-radius: var(--r-md); }
+.with-info:hover { border-color: var(--muted); }
+.with-info > button, .with-info > button:hover:not(:disabled) { border: 0; border-radius: 0; }
+.with-info > .info { min-height: 0; padding: 0 var(--sp-3); background: var(--card2); color: var(--muted); border-left: 1px solid var(--line); font: 600 var(--fs-sm)/1 var(--font); }
+.with-info.rect > .info { border-left-color: var(--line2); }
+.with-info > .info:hover:not(:disabled) { background: var(--line); color: var(--fg); border-left: 1px solid var(--line); }
+.with-info:has([aria-pressed=true]) { border-color: var(--accent); }
+.with-info:has([aria-pressed=true]) > .info { border-left-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
 .info-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
 .pc.with-img .img-button { height: 100%; }
 .pc.with-img .meter > span:first-child { width: 48px; }

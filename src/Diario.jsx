@@ -25,7 +25,7 @@ export default function Diario({ sessions, onDelete }) {
   const [sel, setSel] = useState(sessions[0]?.id);
   const [del, setDel] = useState(null); // 'elimina' | 'riapri'
   const s = sessions.find((x) => x.id === sel) ?? sessions[0];
-  if (!s) return <section><h2 className="section-title">Diario</h2><p className="muted">Ancora nessuna sessione chiusa. Alla fine di una serata, l'amministratore la chiude dal registro del Tavolo.</p></section>;
+  if (!s) return <section><h2 className="section-title">Diario</h2><p className="muted">Ancora nessuna sessione chiusa.</p></section>;
   const scenes = splitScenes(s.righe);
   return (
     <div className="page">
