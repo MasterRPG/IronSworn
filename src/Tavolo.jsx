@@ -228,8 +228,8 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
     if (fx === 'prezzo') { const t = TABLES['Pagare il prezzo'](d); extra = `, ${t.dice}: ${t.text}`; } else {
       const patch = {};
       for (const [k, v] of Object.entries(fx)) if (k !== 'scorte') patch[k] = clamp(c[k] + amount(k, v), k === 'slancio' ? LIMITS.slancio : LIMITS.clock);
-      if (Object.keys(patch).length) act.saveChar(me.id, { ...c, ...patch });
-      if (fx.scorte) act.saveParty({ scorte: clamp(act.scorte + amount('scorte', fx.scorte), LIMITS.scorte) });
+      if (Object.keys(patch).length) act.saveChar(me.id, { ...c, ...patch }, true);
+      if (fx.scorte) act.saveParty({ scorte: clamp(act.scorte + amount('scorte', fx.scorte), LIMITS.scorte) }, true);
     }
     act.note(`${me.data.nome}: ${label}${fx !== 'prezzo' && Object.values(fx).includes('perdita') ? ` (${loss})` : ''}${extra}`); setDone([...done, label]);
   };
@@ -342,29 +342,32 @@ function Log({ rolls, uid, me, act }) {
   );
 }
 
+// Ogni tipo di riga ha la sua etichetta e il suo colore a sinistra, per leggere il registro a colpo d'occhio.
+const KIND = { scene: ['Scena', 'k-scene'], track: ['Avanzamento', 'k-track'], char: ['Scheda', 'k-char'], image: ['Immagine', 'k-image'],
+  note: ['Racconto', 'k-note'], burn: ['Slancio', 'k-move'], table: ['Tabella', 'k-oracle'], oracle: ['Oracolo', 'k-oracle'] };
 export function LogEntry({ row, mine, onChallenge }) {
   const r = row.result;
   const time = new Date(row.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
-  const meta = <span className="meta">{time} · {row.player_name}</span>;
+  const threat = r.kind === 'track' && r.cosa.includes('minaccia');
+  const [label, cls] = threat ? ['Minaccia', 'k-threat'] : KIND[r.kind] ?? ['Mossa', 'k-move'];
+  const meta = <span className="meta">{time} · {row.player_name} <span className="tag">{label}</span></span>;
+  const li = (body, extra = '') => <li className={`${cls} ${extra}`}>{meta}{body}</li>;
   const match = r.match && <em> Doppio!</em>;
-  if (r.kind === 'scene') return <li className="scene">{meta}{r.continua ? 'Si riprende la scena' : 'Nuova scena'}: <b>{r.scena}</b>{r.voto && <span className="muted"> · voto {r.voto}</span>}</li>;
-  if (r.kind === 'track') return <li className="track">{meta}{trackText(r)}</li>;
-  if (r.kind === 'note') return <li className="note">{meta}{r.testo}</li>;
-  if (r.kind === 'burn') return <li>{meta}Usa lo slancio: ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
-  if (r.kind === 'table') return <li>{meta}{r.name}, {r.dice}: {r.text}</li>;
-  if (r.kind === 'oracle') return <li>{meta}Oracolo{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</li>;
+  if (r.kind === 'scene') return li(<>{r.continua ? 'Si riprende la scena' : 'Nuova scena'}: <b>{r.scena}</b>{r.voto && <span className="muted"> · voto {r.voto}</span>}</>);
+  if (r.kind === 'track') return li(trackText(r));
+  if (r.kind === 'char') return li(<><b>{r.pg}</b>: {r.testo}{r.url && <span className="log-imgs"><Lightbox className="log-img" src={r.url} alt={`Ritratto di ${r.pg}`} /></span>}</>);
+  if (r.kind === 'image') return li(<>{r.urls.length === 1 ? 'Nuova immagine' : `${r.urls.length} nuove immagini`}{r.pagina && <> in «{r.pagina}»</>}
+    <span className="log-imgs">{r.urls.map((u) => <Lightbox key={u} className="log-img" src={u} alt={r.pagina ?? ''} />)}</span></>);
+  if (r.kind === 'note') return li(r.testo);
+  if (r.kind === 'burn') return li(<>Usa lo slancio: ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</>);
+  if (r.kind === 'table') return li(`${r.name}, ${r.dice}: ${r.text}`);
+  if (r.kind === 'oracle') return li(<>Oracolo{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</>);
   if (r.pending) {
-    return (
-      <li className="pending">{meta}{row.move}: {r.kind === 'action' ? `punteggio azione ${pendingScore(r)}` : `${r.clocks} orologi`}, in attesa della sfida.
-        {!mine && <button className="small" onClick={onChallenge}>Tira la sfida</button>}
-      </li>
-    );
+    return li(<>{row.move}: {r.kind === 'action' ? `punteggio azione ${pendingScore(r)}` : `${r.clocks} orologi`}, in attesa della sfida.
+      {!mine && <button className="small" onClick={onChallenge}>Tira la sfida</button>}</>, 'pending');
   }
-  return (
-    <li className={r.outcome}>{meta}{row.move}{r.statName ? ` (${r.statName})` : ''}: {r.score} contro {r.c1} e {r.c2} → <b className="out">{OUTCOMES[r.outcome]}</b>{match}
-      {r.sfidante && <span className="muted"> · sfida di {r.sfidante}</span>}
-    </li>
-  );
+  return li(<>{row.move}{r.statName ? ` (${r.statName})` : ''}: {r.score} contro {r.c1} e {r.c2} → <b className="out">{OUTCOMES[r.outcome]}</b>{match}
+    {r.sfidante && <span className="muted"> · sfida di {r.sfidante}</span>}</>, r.outcome);
 }
 
 // "d10 3 + 7" → [10, 10]: i dadi da far rotolare per una tabella.

@@ -8,6 +8,7 @@
   --weak: #E8C36A;
   --miss: #E07A6C; --miss-soft: #3a2320; --miss-text: #F2B3A9;
   --online: #7BC47F;
+  --sheet: #B49BE0;
   /* Caratteri */
   --font: Inter, system-ui, sans-serif; --font-brand: Cinzel, Georgia, serif;
   --fs-xs: 12px; --fs-sm: 14px; --fs-md: 16px; --fs-lg: 18px; --fs-xl: 28px;
@@ -161,7 +162,7 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 .log li .small { margin-left: var(--sp-2); }
 .log .meta { display: block; font-size: var(--fs-xs); color: var(--dim); }
 .log .strong b.out { color: var(--strong); } .log .weak b.out { color: var(--weak); } .log .miss b.out { color: var(--miss); }
-.log li.note { font-style: italic; color: var(--muted); }
+.log li.k-note { font-style: italic; color: var(--muted); }
 .log li.pending { color: var(--muted); }
 
 /* Oracolo e tabelle, Luoghi e minacce */
@@ -232,6 +233,20 @@ fieldset.plain { border: 0; padding: 0; min-width: 0; }
 .pc.with-img .img-button { height: 100%; }
 .pc.with-img .meter > span:first-child { width: 48px; }
 
-/* Diario: registro completo della scena, senza scorrimento; gli avanzamenti in blu */
+/* Registro: un colore a sinistra per tipo di riga (DESIGN.md, sezione 6) */
+.log li { padding-left: var(--sp-3); border-left: 3px solid var(--line); }
+.log .meta .tag { margin-left: var(--sp-1); }
+.log li.k-move.strong { border-left-color: var(--strong); } .log li.k-move.weak { border-left-color: var(--weak); } .log li.k-move.miss { border-left-color: var(--miss); }
+.log li.k-scene { border-left-color: var(--accent); background: var(--accent-soft); }
+.log li.k-track { border-left-color: var(--strong); color: var(--strong-text); }
+.log li.k-threat { border-left-color: var(--weak); color: var(--weak); }
+.log li.k-char { border-left-color: var(--sheet); }
+.log li.k-char b { color: var(--sheet); }
+.log li.k-image { border-left-color: var(--fg); }
+.log li.k-oracle, .log li.k-note { border-left-color: var(--line2); }
+.log-imgs { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }
+.log-imgs .img-button { width: auto; }
+.log-img { width: 96px; height: 72px; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); }
+/* Diario: registro completo della scena, senza scorrimento */
 .log.full { max-height: none; }
-.log li.track { color: var(--strong-text); }
+.sheet-changes li::before, .sheet-changes b { color: var(--sheet); }

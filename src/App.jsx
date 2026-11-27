@@ -7,7 +7,7 @@ import Tavolo, { Oracolo } from './Tavolo.jsx';
 import Tracks from './Tracks.jsx';
 import Pages, { Threats } from './Pages.jsx';
 import { completeClocks } from './rules/progress.js';
-import { trackEvents } from './rules/diario.js';
+import { trackEvents, charEvents } from './rules/diario.js';
 import Diario from './Diario.jsx';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -106,7 +106,10 @@ function Table({ session }) {
   };
 
   // shortcut: ultima scrittura vince sull'intera scheda; se due persone modificano la stessa scheda nello stesso istante, una modifica si perde.
-  const saveChar = async (id, data) => {
+  // quiet: il cambio è già raccontato da una riga del registro (es. "Segna sulla scheda" dopo un tiro).
+  const saveChar = async (id, data, quiet) => {
+    const old = chars.find((c) => c.id === id);
+    if (old && !quiet) log(charEvents(old.data, data));
     setChars((cs) => cs.map((c) => (c.id === id ? { ...c, data } : c)));
     const { error } = await supabase.from('characters').update({ data, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) setError(error.message);
@@ -116,7 +119,8 @@ function Table({ session }) {
     if (error) return setError(error.message);
     setChars((cs) => upsert(cs, data));
   };
-  const saveParty = async (patch) => {
+  const saveParty = async (patch, quiet) => {
+    if ('scorte' in patch && patch.scorte !== scene.scorte && !quiet) log([{ kind: 'char', pg: 'Gruppo', campo: 'scorte', testo: `Scorte da ${scene.scorte} a ${patch.scorte}` }]);
     setParty([{ ...scene, ...patch }]);
     const { error } = await supabase.from('party').update(patch).eq('id', 1);
     if (error) setError(error.message);
@@ -142,6 +146,9 @@ function Table({ session }) {
     if (error) setError(error.message);
   };
   const savePage = async (id, patch) => {
+    const old = pages.find((x) => x.id === id);
+    const added = (patch.immagini ?? []).filter((u) => !(old?.immagini ?? []).includes(u));
+    if (added.length) log([{ kind: 'image', pagina: patch.titolo ?? old?.titolo, urls: added }]);
     setPages((ps) => ps.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     const { error } = await supabase.from('pages').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
     if (error) setError(error.message);
@@ -190,14 +197,14 @@ function Table({ session }) {
   };
   const burn = async (r) => {
     await save(r.move, { kind: 'burn', of: r.id, outcome: r.result.burn.outcome });
-    if (me) saveChar(me.id, { ...me.data, slancio: r.result.burn.newMomentum });
+    if (me) saveChar(me.id, { ...me.data, slancio: r.result.burn.newMomentum }, true);
   };
 
   // Righe del registro che non sono tiri (scene, tracciati): le scrive chiunque, anche senza personaggio scelto.
   const log = async (results) => {
     if (!results.length) return;
     const player_name = me?.data.nome || session.user.user_metadata?.nome || 'qualcuno';
-    const { data, error } = await supabase.from('rolls').insert(results.map((result) => ({ player_name, move: result.kind === 'scene' ? 'Scena' : 'Tracciato', result }))).select();
+    const { data, error } = await supabase.from('rolls').insert(results.map((result) => ({ player_name, move: { scene: 'Scena', track: 'Tracciato', char: 'Scheda', image: 'Immagine' }[result.kind], result }))).select();
     if (error) return setError(error.message);
     data.forEach((row) => setRolls((rs) => upsert(rs, row)));
   };

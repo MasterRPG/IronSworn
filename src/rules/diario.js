@@ -57,3 +57,36 @@ export function summary(rows) {
   });
   return { esiti, avanzamenti: [...changes.values()].filter((c) => c.da === undefined || c.da !== c.a) };
 }
+
+// Cambi alla scheda che contano per il racconto (non i testi descrittivi: nome, aspetto, mestiere…).
+const bond = (l) => (typeof l === 'string' ? l : [l.con, l.testo].filter(Boolean).join(': '));
+const STAT_NAMES = { fisico: 'Fisico', animo: 'Animo', ingegno: 'Ingegno' };
+export function charEvents(o, n) {
+  const out = [];
+  const ev = (campo, testo, extra) => out.push({ kind: 'char', pg: n.nome, campo, testo, ...extra });
+  const sign = (v) => (v > 0 ? `+${v}` : `${v}`);
+  for (const [k, label] of [['salute', 'Salute'], ['spirito', 'Spirito']]) {
+    if (o[k] !== n[k]) ev(k, `${label} da ${o[k]}/6 a ${n[k]}/6 (${n[k] > o[k] ? 'danno' : 'cura'})`);
+  }
+  if (o.slancio !== n.slancio) ev('slancio', `Slancio da ${sign(o.slancio)} a ${sign(n.slancio)}`);
+  if (o.esperienza !== n.esperienza) ev('esperienza', `Esperienza da ${o.esperienza} a ${n.esperienza}`);
+  for (const k of Object.keys(STAT_NAMES)) if (o.stats?.[k] !== n.stats?.[k]) ev('stats', `${STAT_NAMES[k]} da ${o.stats?.[k]} a ${n.stats?.[k]}`);
+  for (const [k, label] of [['cicatrici', 'Nuova cicatrice'], ['orrori', 'Nuovo orrore']]) {
+    const had = new Set((o[k] ?? []).filter((s) => s.trim()));
+    (n[k] ?? []).filter((s) => s.trim() && !had.has(s)).forEach((s) => ev(k, `${label}: ${s}`));
+  }
+  const diff = (a = [], b = [], key) => [b.filter((x) => !a.some((y) => key(y) === key(x))), a.filter((x) => !b.some((y) => key(y) === key(x)))];
+  const [newBonds, lostBonds] = diff(o.legami, n.legami, bond);
+  newBonds.forEach((l) => ev('legami', `Nuovo legame: ${bond(l)}`));
+  lostBonds.forEach((l) => ev('legami', `Legame tolto: ${bond(l)}`));
+  const [newAssets, lostAssets] = diff(o.asset, n.asset, (a) => a.testo);
+  newAssets.forEach((a) => ev('asset', `Nuovo asset: ${a.testo}`));
+  lostAssets.forEach((a) => ev('asset', `Asset tolto: ${a.testo}`));
+  (n.asset ?? []).forEach((a) => {
+    const was = (o.asset ?? []).find((x) => x.testo === a.testo);
+    if (was && (was.stato ?? 'OK') !== (a.stato ?? 'OK')) ev('asset', `Asset «${a.testo}»: ${a.stato}`);
+  });
+  if (n.immagine && n.immagine !== o.immagine) ev('immagine', 'Nuovo ritratto', { url: n.immagine });
+  if (!!n.archiviato !== !!o.archiviato) ev('archiviato', n.archiviato ? 'Archiviato: esce dal gioco' : 'Riportato in gioco');
+  return out;
+}
