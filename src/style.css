@@ -170,6 +170,9 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 .answer .num { font-size: var(--fs-xl); font-weight: 700; line-height: 1.2; }
 .answer .yes { color: var(--strong); } .answer .no { color: var(--miss); }
 .page-text { white-space: pre-wrap; }
+.choices { margin: 0; padding-left: 0; list-style: none; display: grid; gap: var(--sp-1); }
+.choices li { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; min-height: 28px; }
+.choices li::before { content: '•'; color: var(--accent); }
 .login { max-width: 380px; margin: 12vh auto 0; }
 .login .brand { margin-bottom: var(--sp-2); }
 .login button { margin-top: var(--sp-2); }

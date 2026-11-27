@@ -1,60 +1,68 @@
 // Testi delle mosse e tabelle, copiati dal Google Doc "Ironsworn" del gruppo.
 
+// Ogni esito: testo, quante opzioni si scelgono ("tutte" = si applicano tutte) e le opzioni a elenco.
+// Un'opzione è [testo, effetto]: l'effetto somma ai campi della scheda (salute/spirito = danni) o alle Scorte;
+// null = solo racconto; 'prezzo' = Pagare il prezzo.
+const PAY = { pick: 'Scegli uno', options: [['Tira la tabella Pagare il prezzo', 'prezzo'], ['Subire una perdita: 2 di Salute', { salute: 2 }], ['Subire una perdita: 2 di Spirito', { spirito: 2 }]] };
+const COMBAT = [['Segna progresso', null], ['Colpo terribile: segna progresso una seconda volta', null], ['Gli prendi qualcosa', null], ['Lo sposti', null], ['Lo spaventi: un compagno ha +1', null], ['Proteggi un compagno', null]];
+const WILD = [['−1 Salute', { salute: -1 }], ['−1 Spirito', { spirito: -1 }], ['+1 slancio', { slancio: 1 }], ['+1 al prossimo viaggio', null], ['+1 Scorte', { scorte: 1 }]];
+const TOWN = [['−2 Salute', { salute: -2 }], ['−2 Spirito', { spirito: -2 }], ['+2 Scorte', { scorte: 2 }], ['Sostituire o aggiustare un asset', null], ['+2 slancio', { slancio: 2 }]];
+
 export const MOVE_TEXTS = {
   'Giurare sul Ferro': {
-    strong: '+2 slancio e segna progresso: parti con un vantaggio concreto. Raccontalo.',
-    weak: 'Sei determinato ma non sai bene come procedere. +1 slancio. Racconta cosa fai per trovare la prima pista e scrivi una minaccia: cosa succede se ci metti troppo tempo.',
-    miss: 'Un ostacolo serio ti blocca prima ancora di partire. Racconta qual è e scrivi una minaccia con un segmento già pieno.',
+    strong: { text: 'Parti con un vantaggio concreto. Raccontalo.', pick: 'tutte', options: [['+2 slancio', { slancio: 2 }], ['Segna progresso sul voto', null]] },
+    weak: { text: 'Sei determinato ma non sai bene come procedere. Racconta cosa fai per trovare la prima pista e scrivi una minaccia: cosa succede se ci metti troppo tempo.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
+    miss: { text: 'Un ostacolo serio ti blocca prima ancora di partire. Racconta qual è e scrivi una minaccia con un segmento già pieno.' },
   },
   'Sfidare il pericolo': {
-    strong: 'Ce la fai. +1 slancio.',
-    weak: 'Ce la fai, ma scegli un costo: −1 slancio, oppure Subire una perdita di Salute, Spirito o Scorte.',
-    miss: 'Non ce la fai, o ce la fai con una conseguenza grave. Pagare il prezzo.',
+    strong: { text: 'Ce la fai.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
+    weak: { text: 'Ce la fai, ma paghi un costo.', pick: 'Scegli uno', options: [['−1 slancio', { slancio: -1 }], ['Subire una perdita: 2 di Salute', { salute: 2 }], ['Subire una perdita: 2 di Spirito', { spirito: 2 }], ['Subire una perdita: −2 Scorte', { scorte: -2 }]] },
+    miss: { text: 'Non ce la fai, o ce la fai con una conseguenza grave.', ...PAY },
   },
   "Preparare l'azione": {
-    strong: 'Scegli uno: tu o un tuo compagno avete +1 alla prossima mossa, oppure +2 slancio.',
-    weak: '+1 slancio.',
-    miss: 'Il tentativo fallisce o ti espone. Pagare il prezzo.',
+    strong: { text: 'Ti prepari bene.', pick: 'Scegli uno', options: [['Tu o un compagno avete +1 alla prossima mossa', null], ['+2 slancio', { slancio: 2 }]] },
+    weak: { text: 'Ti prepari, ma meno di quanto speravi.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
+    miss: { text: 'Il tentativo fallisce o ti espone.', ...PAY },
   },
   'Raccogliere informazioni': {
-    strong: 'Scopri qualcosa di utile e preciso, e sai cosa fare dopo. +2 slancio.',
-    weak: 'Scopri qualcosa, ma complica le cose o rivela un nuovo pericolo. +1 slancio.',
-    miss: 'Scopri qualcosa di terribile, o la ricerca ti mette nei guai. Pagare il prezzo.',
+    strong: { text: 'Scopri qualcosa di utile e preciso, e sai cosa fare dopo.', pick: 'tutte', options: [['+2 slancio', { slancio: 2 }]] },
+    weak: { text: 'Scopri qualcosa, ma complica le cose o rivela un nuovo pericolo.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
+    miss: { text: 'Scopri qualcosa di terribile, o la ricerca ti mette nei guai.', ...PAY },
   },
   Parlamentare: {
-    strong: 'Accetta, o ti dà quello che chiedi. +1 slancio.',
-    weak: 'Accetta, ma vuole qualcosa in cambio. Decidi tu se accettare.',
-    miss: 'Rifiuta, o chiede qualcosa che ti costa caro. Devi Pagare il prezzo.',
+    strong: { text: 'Accetta, o ti dà quello che chiedi.', pick: 'tutte', options: [['+1 slancio', { slancio: 1 }]] },
+    weak: { text: 'Accetta, ma vuole qualcosa in cambio. Decidi tu se accettare.' },
+    miss: { text: 'Rifiuta, o chiede qualcosa che ti costa caro.', ...PAY },
   },
   'Intraprendere un viaggio': {
-    strong: 'Raggiungete un punto di sosta o una nuova area. Scegli uno: usate bene le risorse (segna progresso), oppure andate veloci (segna progresso e +1 slancio, ma Subire una perdita di Scorte).',
-    weak: 'Segnate progresso, ma devi Subire una perdita di Scorte.',
-    miss: 'Il percorso si complica (strada sbagliata, maltempo, un incontro, un crollo). Devi Pagare il prezzo.',
+    strong: { text: 'Raggiungete un punto di sosta o una nuova area.', pick: 'Scegli uno', options: [['Usate bene le risorse: segna progresso', null], ['Andate veloci: segna progresso, +1 slancio e −2 Scorte', { slancio: 1, scorte: -2 }]] },
+    weak: { text: 'Segnate progresso, ma consumate risorse.', pick: 'tutte', options: [['Subire una perdita: −2 Scorte', { scorte: -2 }]] },
+    miss: { text: 'Il percorso si complica (strada sbagliata, maltempo, un incontro, un crollo).', ...PAY },
   },
   'Stringere un legame': {
-    strong: 'Scrivi il legame come una frase. Scegli uno: cancella un segmento di Spirito, oppure +2 slancio.',
-    weak: 'Prima chiedono qualcosa in più. Se lo fai (o giuri un voto per farlo), scrivi il legame.',
-    miss: 'Rifiutano o vieni frainteso. Devi Pagare il prezzo.',
+    strong: { text: 'Scrivi il legame come una frase.', pick: 'Scegli uno', options: [['−1 Spirito (cancella un segmento)', { spirito: -1 }], ['+2 slancio', { slancio: 2 }]] },
+    weak: { text: 'Prima chiedono qualcosa in più. Se lo fai (o giuri un voto per farlo), scrivi il legame.' },
+    miss: { text: 'Rifiutano o vieni frainteso.', ...PAY },
   },
   Combattere: {
-    strong: 'Scegli 2: segna progresso; colpo terribile (progresso una seconda volta); gli prendi qualcosa; lo sposti; lo spaventi (un compagno ha +1); proteggi un compagno.',
-    weak: 'Scegli 1 dall\'elenco, e il nemico fa una mossa leggera.',
-    miss: 'Il nemico fa una mossa dura, e sei in difficoltà.',
+    strong: { text: 'Hai la meglio.', pick: 'Scegli due', options: COMBAT },
+    weak: { text: 'Il nemico fa una mossa leggera.', pick: 'Scegli uno', options: COMBAT },
+    miss: { text: 'Il nemico fa una mossa dura, e sei in difficoltà.' },
   },
   'Riposare (luogo selvaggio)': {
-    strong: 'Ogni personaggio sceglie due: −1 Salute, −1 Spirito, +1 slancio, +1 al prossimo viaggio, +1 Scorte.',
-    weak: 'Ogni personaggio sceglie solo uno dall\'elenco.',
-    miss: 'Il riposo viene interrotto o non porta sollievo. Devi Pagare il prezzo.',
+    strong: { text: 'Il riposo vi fa bene. Ogni personaggio sceglie per sé.', pick: 'Scegli due', options: WILD },
+    weak: { text: 'Il riposo aiuta poco. Ogni personaggio sceglie per sé.', pick: 'Scegli uno', options: WILD },
+    miss: { text: 'Il riposo viene interrotto o non porta sollievo.', ...PAY },
   },
   'Riposare (insediamento)': {
-    strong: 'Ogni personaggio sceglie due: −2 Salute, −2 Spirito, +2 Scorte, sostituire o aggiustare un asset, +2 slancio.',
-    weak: 'Ogni personaggio sceglie solo uno dall\'elenco, ma la comunità ha un problema e vi chiede aiuto.',
-    miss: 'Succede qualcosa di grave durante il soggiorno. Devi Pagare il prezzo.',
+    strong: { text: 'Il soggiorno vi fa bene. Ogni personaggio sceglie per sé.', pick: 'Scegli due', options: TOWN },
+    weak: { text: 'La comunità ha un problema e vi chiede aiuto. Ogni personaggio sceglie per sé.', pick: 'Scegli uno', options: TOWN },
+    miss: { text: 'Succede qualcosa di grave durante il soggiorno.', ...PAY },
   },
   'Compiere un rito': {
-    strong: 'La magia funziona come volevi o comunque a tuo favore.',
-    weak: 'La magia funziona, ma scegli uno: effetto più debole o breve; Subire una perdita di Spirito; qualcosa di oscuro si accorge di te; un effetto collaterale.',
-    miss: 'La magia ti sfugge di mano. Devi Pagare il prezzo, e il prezzo è strano o soprannaturale.',
+    strong: { text: 'La magia funziona come volevi o comunque a tuo favore.' },
+    weak: { text: 'La magia funziona, ma c\'è un costo.', pick: 'Scegli uno', options: [['Effetto più debole o più breve', null], ['Subire una perdita: 2 di Spirito', { spirito: 2 }], ['Qualcosa di oscuro si accorge di te', null], ['Un effetto collaterale', null]] },
+    miss: { text: 'La magia ti sfugge di mano, e il prezzo è strano o soprannaturale.', ...PAY },
   },
 };
 
