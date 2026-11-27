@@ -71,6 +71,7 @@ La forma dice cosa fa: **rettangolo = azione**, **pillola = scelta**, **testo so
 - **Rosso** (`--miss`): danno e fallimento (Salute, Spirito), eliminare.
 - **Verde** (`--online`): collegato, asset OK.
 - **Viola** (`--sheet`): cambi alla scheda nel registro (danni, esperienza, legami, asset).
+- **Tracciati** (pagina Voti): bordo sinistro ed etichetta del colore del tipo. Voto di gruppo blu, voto personale viola, viaggio verde, scontro rosso, luogo pericoloso terra (`--place`).
 - **Registro**: ogni riga ha un'etichetta del tipo (Mossa, Scena, Avanzamento, Minaccia, Scheda, Immagine, Oracolo, Racconto) e un bordo sinistro del colore che le spetta.
 
 ## 7. Tracciati

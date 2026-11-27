@@ -9,6 +9,7 @@
   --miss: #E07A6C; --miss-soft: #3a2320; --miss-text: #F2B3A9;
   --online: #7BC47F;
   --sheet: #B49BE0;
+  --place: #C9A27A;
   /* Caratteri */
   --font: Inter, system-ui, sans-serif; --font-brand: Cinzel, Georgia, serif;
   --fs-xs: 12px; --fs-sm: 14px; --fs-md: 16px; --fs-lg: 18px; --fs-xl: 28px;
@@ -183,6 +184,11 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 .track-grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); align-items: start; }
 @media (max-width: 420px) { .track-grid { grid-template-columns: minmax(0, 1fr); } }
 .track-card.closed { opacity: .65; }
+/* Un colore per tipo di tracciato (DESIGN.md, sezione 6) */
+.track-card { border-left: 3px solid var(--kind, var(--line)); }
+.track-card .kind-tag { color: var(--kind); border-color: var(--kind); }
+.kind-gruppo { --kind: var(--strong); } .kind-personale { --kind: var(--sheet); } .kind-viaggio { --kind: var(--online); }
+.kind-scontro { --kind: var(--miss); } .kind-luogo { --kind: var(--place); }
 .pos { background: var(--strong-soft); color: var(--strong-text); border-color: var(--strong-soft); }
 .pos.difficolta { background: var(--miss-soft); color: var(--miss-text); border-color: var(--miss-soft); }
 .pos:hover:not(:disabled) { background: var(--strong-soft); border-color: var(--strong); }
