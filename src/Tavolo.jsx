@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Lightbox from './Lightbox.jsx';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
@@ -79,13 +80,16 @@ function Party({ chars, uid, scorte, onScorte }) {
           const eff = effectiveStats(c);
           const marks = (l) => l.filter((s) => s.trim()).length;
           return (
-            <div key={id} className={`pc${owner === uid ? ' mine' : ''}`}>
-              <div className="pc-head">{c.immagine && <img className="avatar" src={c.immagine} alt="" />}<b className="grow">{c.nome}</b><span className="muted small-text">{c.giocatore}</span></div>
+            <div key={id} className={`pc${owner === uid ? ' mine' : ''}${c.immagine ? ' with-img' : ''}`}>
+              {c.immagine && <Lightbox className="pc-img" src={c.immagine} full={c.immagine_intera} alt={`Ritratto di ${c.nome}`} />}
+              <div className="pc-body">
+              <div className="pc-head"><b className="grow">{c.nome}</b><span className="muted small-text">{c.giocatore}</span></div>
               <div className="pc-stats"><span>Fisico <b>{eff.fisico}</b></span><span>Animo <b>{eff.animo}</b></span><span>Ingegno <b>{eff.ingegno}</b></span></div>
               <div className="meter"><span>Salute</span><Segs n={c.salute} /><span>{c.salute}/6</span></div>
               <div className="meter"><span>Spirito</span><Segs n={c.spirito} /><span>{c.spirito}/6</span></div>
               <div className="pc-stats"><span>Slancio <b>{signed(c.slancio)}</b></span><span>Cicatrici {marks(c.cicatrici)}/3 · Orrori {marks(c.orrori)}/3</span></div>
               {(c.salute >= 4 || c.spirito >= 4) && <p className="warn">Salute o Spirito a 4+: niente slancio guadagnato</p>}
+              </div>
             </div>
           );
         })}
