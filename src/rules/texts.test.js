@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MOVE_TEXTS, TABLES, TABLE_INFO } from './texts.js';
+import { MOVE_TEXTS, MOVE_TRIGGERS, TABLES, TABLE_INFO } from './texts.js';
 import { ACTION_MOVES } from './moves.js';
 
 test('ogni mossa con tiro azione ha i tre esiti', () => {
@@ -24,4 +24,8 @@ test('ogni tabella dà un testo anche ai bordi del dado', () => {
 test('ogni tabella si può leggere per intero', () => {
   for (const name of Object.keys(TABLES)) assert.ok(TABLE_INFO[name]?.every(([, rows]) => rows.length >= 10), name);
   assert.equal(TABLE_INFO['Pagare il prezzo'][0][1][1], '3–5. Una persona o una comunità di cui ti fidavi perde fiducia in te, o agisce contro di te.');
+});
+
+test('ogni mossa dice quando si usa', () => {
+  for (const m of ACTION_MOVES) assert.match(MOVE_TRIGGERS[m.name]?.text ?? '', /^Quando /, m.name);
 });

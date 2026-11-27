@@ -87,7 +87,7 @@ export const FINISH_TEXTS = {
 FINISH_TEXTS.luogo = FINISH_TEXTS.viaggio;
 
 const PREZZO = [
-  [2, 'Tira di nuovo e applica il risultato, peggiorato.'],
+  [2, 'Tira di nuovo e applica il risultato, peggiorato. Se esce ancora questo, succede qualcosa di terribile che cambia il corso del voto.'],
   [5, 'Una persona o una comunità di cui ti fidavi perde fiducia in te, o agisce contro di te.'],
   [9, 'Una persona o una comunità a cui tieni finisce in pericolo.'],
   [16, 'Vieni separato da qualcosa o da qualcuno.'],
@@ -102,7 +102,7 @@ const PREZZO = [
   [90, 'Sprechi risorse: Subire una perdita di Scorte.'],
   [94, 'Sei costretto ad agire contro le tue intenzioni.'],
   [98, 'Un amico o un alleato viene messo in pericolo.'],
-  [100, 'Tira altre due volte: succedono entrambe le cose.'],
+  [100, 'Tira altre due volte: succedono entrambe le cose. Se esce lo stesso risultato, peggioralo.'],
 ];
 
 const NEMICO = ['colpisce: devi Subire una perdita di Salute.', "ti disarma o spezza l'arma.", 'si gira contro un altro personaggio.',
@@ -162,4 +162,23 @@ export const TABLE_INFO = {
   Ricordi: twoD10(RICORDI),
   'Il problema': [['d10', numbered(PROBLEMI)]],
   'Luogo pericoloso': [['Ambiente, primo d10', numbered(AMBIENTI)], ['Tema, secondo d10', numbered(TEMI)]],
+};
+
+// Quando si usa ogni mossa, alla lettera dal Google Doc (sezione 4); "note" = le righe dopo gli esiti.
+export const MOVE_TRIGGERS = {
+  'Giurare sul Ferro': { text: "Quando giuri di portare a termine un'impresa, tocca un pezzo di ferro (la lama della tua arma, un anello, un chiodo, il ferro di cavallo sopra una porta) e pronuncia il voto ad alta voce, in prima persona. Decidi il grado (Pericoloso, Formidabile, Leggendario), disegna il primo orologio del tracciato e tira +Animo." },
+  'Sfidare il pericolo': { text: 'Quando tenti qualcosa di rischioso o reagisci a una minaccia imminente, descrivi come e tira:', list: ['+Fisico con forza, velocità, precisione o resistenza;', '+Animo con coraggio, volontà o empatia;', '+Ingegno con astuzia, conoscenza o osservazione.'] },
+  "Preparare l'azione": { text: "Quando ti prepari prima di agire (studi la situazione, tendi una trappola o ti metti in posizione), descrivi come e tira:", list: ['+Fisico con forza, velocità, precisione o resistenza;', '+Animo con coraggio, volontà o empatia;', '+Ingegno con astuzia, conoscenza o osservazione.'],
+    note: "Armi da tiro. In uno scontro, tirare con l'arco o con la fionda è questa mossa con +Fisico: copri un alleato e il +1 va a lui." },
+  'Raccogliere informazioni': { text: 'Quando cerchi di capire qualcosa del mondo (esamini un luogo, fai domande, segui una traccia, indaghi su un fatto), descrivi come e tira:', list: ['+Ingegno se osservi, esplori o studi;', '+Animo se chiedi in giro.'],
+    note: 'Se quello che scopri è un passo avanti importante nel voto, possiamo Raggiungere una tappa.' },
+  Parlamentare: { text: 'Quando cerchi di convincere qualcuno a fare qualcosa tira in base a come lo fai:', list: ['+Fisico se lo fai ricorrendo a minacce o violenza;', '+Animo se interagisci in maniera amichevole;', '+Ingegno se lo fai ricorrendo ad astuzia, fascino o dialettica.'] },
+  'Intraprendere un viaggio': { text: 'Quando viaggi verso un luogo lontano o esplori un luogo pericoloso (una rovina, una caverna, una fortezza), decidi il grado e disegna il primo orologio del tracciato. Per ogni tratto di strada o area da attraversare, un giocatore guida il gruppo e tira +Ingegno.',
+    note: 'Quando pensate di essere vicini alla meta, potete Portare a termine.' },
+  'Stringere un legame': { text: 'Quando passi del tempo con una persona o una comunità, la aiuti o condividi con lei un momento importante, tira +Animo.' },
+  Combattere: { text: 'Quando sei in vantaggio e attacchi un avversario corpo a corpo, tira +Fisico.', note: 'Quando pensi di avere il nemico in pugno, puoi Portare a termine.' },
+  'Riposare (luogo selvaggio)': { text: 'Quando vi fermate a riposare, e siete in… …un luogo selvaggio. Un giocatore tira +Scorte.' },
+  'Riposare (insediamento)': { text: 'Quando vi fermate a riposare, e siete in… …un insediamento. Un giocatore tira +Animo; se qualcuno ha un legame con quella comunità, tira lui e aggiunge +1.' },
+  'Compiere un rito': { text: "Quando cerchi di piegare il mondo con la magia (leggere un presagio, parlare con un morto, sciogliere una maledizione minore, chiamare la nebbia), spiega cosa vuoi ottenere e cosa usi: un oggetto, delle parole, un'offerta, il tuo sangue. Tira +Animo.",
+    note: "Grande magia. Se quello che vuoi è troppo grande per una scena (riportare in vita qualcuno, spezzare la maledizione di un villaggio, chiudere un passaggio tra i mondi), non si tira. Giuri sul Ferro un voto Formidabile o Leggendario. Poi scegliete insieme da 1 a 3 requisiti, oppure chiedete all'oracolo: un luogo dove compiere il rito, qualcosa da procurarsi, un prezzo da pagare. Non potete tentare Portare a termine finché tutti i requisiti non sono soddisfatti. Quando il rito riesce, la magia accade." },
 };
