@@ -185,7 +185,12 @@ function Table({ session }) {
 
   const note = (testo) => save('Racconto', { kind: 'note', testo });
   const ask = (odds, question) => save("Chiedere all'oracolo", oracle({ odds, question }, rollDice.oracle()));
-  const act = { save, note, ask, challenge, burn, saveChar, saveParty, saveTrack, scorte, ODDS };
+  const clearLog = async () => {
+    const { error } = await supabase.from('rolls').delete().gt('id', 0);
+    if (error) return setError(error.message);
+    setRolls([]);
+  };
+  const act = { save, note, ask, challenge, burn, saveChar, saveParty, saveTrack, scorte, ODDS, clearLog: session.user.email === ADMIN_EMAIL ? clearLog : null };
   const online = usePresence(session, me);
 
   return (
