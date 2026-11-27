@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ASSET_TYPES, LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { completeClocks } from './rules/progress.js';
 import { Boxes, Segs } from './Tavolo.jsx';
@@ -18,7 +18,19 @@ export const STATI = ['OK', 'Rotto', 'Perso'];
 const STAT_NAMES = { fisico: 'Fisico', animo: 'Animo', ingegno: 'Ingegno' };
 const signed = (n) => (n > 0 ? `+${n}` : `${n}`);
 
-export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
+// Carica o toglie l'immagine del personaggio.
+function Portrait({ has, onFile, onRemove }) {
+  const ref = useRef(null);
+  return (
+    <div className="row small-text">
+      <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) onFile(e.target.files[0]); e.target.value = ''; }} />
+      <button className="link" onClick={() => ref.current.click()}>{has ? 'Cambia immagine' : '+ Immagine del personaggio'}</button>
+      {has && <button className="link danger" onClick={() => confirm('Togliere l\'immagine del personaggio?') && onRemove()}>Togli immagine</button>}
+    </div>
+  );
+}
+
+export default function Sheet({ c, readOnly, onChange, vow, onArchive, onUpload }) {
   const set = (patch) => onChange({ ...c, ...patch });
   const eff = effectiveStats(c);
   const legami = c.legami.map(legameOf);
@@ -46,6 +58,8 @@ export default function Sheet({ c, readOnly, onChange, vow, onArchive }) {
     <div className="sheet-cols">
       <section>
         <div className="sheet-head">
+          {c.immagine && <img className="portrait" src={c.immagine} alt={`Ritratto di ${c.nome}`} />}
+          {ed && onUpload && <Portrait has={!!c.immagine} onFile={async (f) => { const url = await onUpload(f); if (url) set({ immagine: url }); }} onRemove={() => set({ immagine: undefined })} />}
           {ed ? <Text className="sheet-name" value={c.nome} aria-label="Nome" onSave={(nome) => nome.trim() && set({ nome })} /> : <h2 className="sheet-name">{c.nome}</h2>}
           <p className="muted small-text">{c.mestiere || 'mestiere?'} · giocato da {c.giocatore || '?'}{c.archiviato ? ` · archiviato il ${c.archiviato}` : ''}</p>
         </div>

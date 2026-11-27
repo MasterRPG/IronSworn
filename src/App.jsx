@@ -216,13 +216,13 @@ function Table({ session }) {
         <Threats tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} />
       </div>}
       {tab === 'note' && <Pages pages={pages} groups={[['nota', 'Note', '+ Nuova nota']]} onSave={savePage} onCreate={createPage} onDelete={deletePage} onUpload={uploadImage} />}
-      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
+      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} onUpload={uploadImage} />}
     </main>
   );
 }
 
 // Una scheda alla volta, con le linguette dei personaggi; gli archiviati in fondo.
-function Schede({ chars, uid, admin, me, tracks, onSave, onAdd }) {
+function Schede({ chars, uid, admin, me, tracks, onSave, onAdd, onUpload }) {
   const [sel, setSel] = useState(me?.id ?? chars[0]?.id);
   const c = chars.find((x) => x.id === sel) ?? chars[0];
   const live = chars.filter((x) => !x.data.archiviato);
@@ -240,7 +240,7 @@ function Schede({ chars, uid, admin, me, tracks, onSave, onAdd }) {
           {gone.map((x) => <option key={x.id} value={x.id}>{x.data.nome}</option>)}</select>}
         {c && <span className="muted small-text push">{mine ? 'È il tuo personaggio: puoi modificarlo.' : admin ? 'Sei l\'amministratore: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
       </div>
-      {c && <Sheet key={c.id} c={c.data} readOnly={!ed || !!c.data.archiviato} vow={vow} onChange={(data) => onSave(c.id, data)} onArchive={admin && (() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) }))} />}
+      {c && <Sheet key={c.id} c={c.data} readOnly={!ed || !!c.data.archiviato} vow={vow} onUpload={onUpload} onChange={(data) => onSave(c.id, data)} onArchive={admin && (() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) }))} />}
       {c?.data.archiviato && admin && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>}
     </div>
   );
