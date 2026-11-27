@@ -237,20 +237,22 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
       <div className="dice-row">
         {r.kind === 'action' && <><span className="die-col"><Die value={r.d6Value} />d6</span><span className="muted">+ {r.stat}{r.adds ? ` + ${r.adds}` : ''} =</span></>}
         <span className="die-col"><Die value={r.score} cls="score" />{r.kind === 'action' ? 'azione' : 'orologi'}</span>
+        {burnRow && <span className="die-col"><Die value={r.momentum} cls="score" />slancio</span>}
         <span className="muted">contro</span>
         <span className="die-col"><Die value={r.c1} sides={10} cls={beat(r.c1) ? 'beat' : ''} />{beat(r.c1) ? 'battuto' : 'non battuto'}</span>
         <span className="die-col"><Die value={r.c2} sides={10} cls={beat(r.c2) ? 'beat' : ''} />{beat(r.c2) ? 'battuto' : 'non battuto'}</span>
       </div>
       {r.kind === 'action' && r.d6Value !== r.d6 && <p className="muted small-text">Slancio negativo: il d6 ha fatto {r.d6} e vale 0.</p>}
-      <p className={`outcome ${outcome}`}>{OUTCOMES[outcome]}{burnRow && <span className="muted small-text"> (slancio bruciato)</span>}</p>
+      <p className={`outcome ${outcome}`}>{OUTCOMES[outcome]}{burnRow && <span className="muted small-text"> (con lo slancio)</span>}</p>
       {text && <p>{text}</p>}
       {r.match && <p className="muted small-text">Doppio: {outcome === 'miss' ? 'la situazione peggiora parecchio.' : 'un risultato migliore del previsto.'}</p>}
       {mine && r.burn && !burnRow && (
         <div className="offer">
-          <span>Puoi bruciare lo slancio ({signed(r.momentum)}): diventa <b>{OUTCOMES[r.burn.outcome]}</b> e lo slancio torna a +2.</span>
-          <button className="small" onClick={() => act.burn(row)}>Brucia lo slancio</button>
+          <span>Usa lo slancio ({signed(r.momentum)}) al posto del tiro appena fatto: si confronta con i dadi sfida, poi lo slancio torna a +2.</span>
+          <button className="small" onClick={() => act.burn(row)}>Usa lo slancio</button>
         </div>
       )}
+      {burnRow && <p className="small-text">Slancio {signed(r.momentum)} contro i dadi sfida: {burnRow.result.outcome === r.outcome ? `il risultato resta ${OUTCOMES[r.outcome]}` : `da ${OUTCOMES[r.outcome]} diventa ${OUTCOMES[burnRow.result.outcome]}`}. Slancio tornato a +2.</p>}
       {offer === 'threat' && (
         <div className="offer">
           <span>Fallimento in una scena del voto. <b>Avanzo la minaccia "{sceneVow.minaccia || sceneVow.nome}"?</b> ({sceneVow.minaccia_segmenti}/6)</span>
@@ -266,7 +268,8 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
         </div>
       )}
       {options.length > 0 && <>
-        <p className="label">Applica alla scheda</p>
+        <p className="label">Conseguenze del tiro</p>
+        <p className="muted small-text">Scegli cosa ottieni o paghi: il pulsante lo segna sulla tua scheda.</p>
         <div className="row">{options.map(([label, fx, off]) => (
           <button key={label} className="ghost small" disabled={off || done.includes(label)}
             onClick={() => (fx ? apply(label, fx) : (() => { const t = TABLES['Pagare il prezzo'](d); apply(label, () => {}, `, ${t.dice}: ${t.text}`); })())}>
@@ -319,7 +322,7 @@ function LogEntry({ row, mine, onChallenge }) {
   const meta = <span className="meta">{time} · {row.player_name}</span>;
   const match = r.match && <em> Doppio!</em>;
   if (r.kind === 'note') return <li className="note">{meta}{r.testo}</li>;
-  if (r.kind === 'burn') return <li>{meta}Brucia lo slancio: ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
+  if (r.kind === 'burn') return <li>{meta}Usa lo slancio: ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
   if (r.kind === 'table') return <li>{meta}{r.name}, {r.dice}: {r.text}</li>;
   if (r.kind === 'oracle') return <li>{meta}Oracolo{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</li>;
   if (r.pending) {

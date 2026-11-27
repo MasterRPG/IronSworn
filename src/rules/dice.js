@@ -25,10 +25,10 @@ export function actionRoll({ stat, adds = 0, momentum = 2 }, dice) {
     outcome: outcomeOf(beaten),
     burn: null,
   };
-  // Bruciare lo slancio: ogni dado sfida più basso dello slancio conta come battuto.
+  // Usare lo slancio (sempre possibile se positivo): ogni dado sfida più basso dello slancio conta come battuto.
   if (momentum > 0) {
     const burned = (score > c1 || momentum > c1) + (score > c2 || momentum > c2);
-    if (burned > beaten) result.burn = { outcome: outcomeOf(burned), newMomentum: 2 };
+    result.burn = { outcome: outcomeOf(burned), newMomentum: 2 };
   }
   return result;
 }

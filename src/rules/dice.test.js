@@ -35,8 +35,8 @@ test('bruciare lo slancio conta battuti i dadi più bassi dello slancio, poi tor
   assert.deepEqual(r.burn, { outcome: 'strong', newMomentum: 2 });
 });
 
-test('niente proposta di bruciare se non migliora o se lo slancio non è positivo', () => {
-  assert.equal(actionRoll({ stat: 1, momentum: 5 }, { d6: 2, c1: 5, c2: 9 }).burn, null);
+test('lo slancio si può usare anche se non cambia il risultato, mai se non è positivo', () => {
+  assert.deepEqual(actionRoll({ stat: 1, momentum: 5 }, { d6: 2, c1: 5, c2: 9 }).burn, { outcome: 'miss', newMomentum: 2 });
   assert.equal(actionRoll({ stat: 1, momentum: 0 }, { d6: 1, c1: 1, c2: 9 }).burn, null);
 });
 
