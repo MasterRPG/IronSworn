@@ -169,7 +169,9 @@ label.col { flex-direction: column; align-items: stretch; }
 .xp span.on { background: var(--strong); border-color: var(--strong); }
 .item { background: var(--card2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
 .item .row { align-items: baseline; }
-.item.broken b { text-decoration: line-through; color: var(--muted); }
+.item.broken .asset-text { text-decoration: line-through; color: var(--muted); }
+.asset-text { font-size: 14px; line-height: 1.45; }
+.item .chip { padding: 2px 10px; min-height: 26px; font-size: 12px; }
 .grow { flex: 1; }
 .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line2); border-radius: 999px; padding: 1px 8px; }
 .state { font-size: 12px; } .s-Rotto { color: var(--weak); } .s-Perso { color: var(--miss); } .s-OK { color: var(--online); }
