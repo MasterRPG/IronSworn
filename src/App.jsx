@@ -5,6 +5,7 @@ import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats, emptyCharacter } from './rules/character.js';
 import Sheet, { Text } from './Sheet.jsx';
 import Tracks from './Tracks.jsx';
+import Pages from './Pages.jsx';
 import { completeClocks, markProgress } from './rules/progress.js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
@@ -80,7 +81,9 @@ function Table({ session }) {
   const [chars, setChars] = useLive('characters', (q) => q.order('id'), setError);
   const [party, setParty] = useLive('party', (q) => q, setError);
   const [tracks, setTracks] = useLive('tracks', (q) => q.order('id'), setError);
+  const [pages, setPages] = useLive('pages', (q) => q.order('id'), setError);
   const [tab, setTab] = useState('tavolo');
+  const [story, setStory] = useState('');
   const scene = party[0] ?? { id: 1, scorte: 5, scena: '', scena_voto: null };
   const sceneVow = tracks.find((t) => t.id === scene.scena_voto);
   const uid = session.user.id;
@@ -125,6 +128,27 @@ function Table({ session }) {
     const { error } = await supabase.from('tracks').delete().eq('id', id);
     if (error) setError(error.message);
   };
+  const savePage = async (id, patch) => {
+    setPages((ps) => ps.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    const { error } = await supabase.from('pages').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) setError(error.message);
+  };
+  const createPage = async (row) => {
+    const { data, error } = await supabase.from('pages').insert(row).select().single();
+    if (error) return setError(error.message);
+    setPages((ps) => [...ps.filter((x) => x.id !== data.id), data]);
+  };
+  const deletePage = async (id) => {
+    setPages((ps) => ps.filter((x) => x.id !== id));
+    const { error } = await supabase.from('pages').delete().eq('id', id);
+    if (error) setError(error.message);
+  };
+  const tell = (e) => {
+    e.preventDefault();
+    if (!story.trim()) return;
+    save('Racconto', { kind: 'note', testo: story.trim() });
+    setStory('');
+  };
   const finish = (t) => {
     save(`Portare a termine: ${t.nome}`, { kind: 'progress', pending: true, clocks: completeClocks(t.segmenti), trackId: t.id });
     setTab('tavolo');
@@ -157,7 +181,7 @@ function Table({ session }) {
   const burned = new Set(rolls.filter((r) => r.result.kind === 'burn').map((r) => r.result.of));
   // Lo slancio si brucia solo subito dopo il tiro: quindi solo sull'ultimo tiro proprio.
   const [dismissed, setDismissed] = useState(new Set());
-  const lastMine = rolls.find((r) => r.user_id === session.user.id && r.result.kind !== 'burn')?.id;
+  const lastMine = rolls.find((r) => r.user_id === session.user.id && !['burn', 'note'].includes(r.result.kind))?.id;
 
   return (
     <main>
@@ -173,7 +197,7 @@ function Table({ session }) {
       </header>
       {error && <p role="alert" className="error">{error}</p>}
       <nav className="tabs">
-        {[['tavolo', 'Tavolo'], ['voti', 'Voti e tracciati'], ['schede', 'Schede']].map(([k, label]) => (
+        {[['tavolo', 'Tavolo'], ['voti', 'Voti e tracciati'], ['schede', 'Schede'], ['note', 'Note']].map(([k, label]) => (
           <button key={k} className={tab === k ? 'active' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{label}</button>
         ))}
       </nav>
@@ -189,6 +213,10 @@ function Table({ session }) {
           <OraclePanel onRoll={save} />
         </div>
         <h2>Registro</h2>
+        <form className="story" onSubmit={tell}>
+          <input value={story} placeholder="Racconta in una riga cosa succede…" aria-label="Riga di racconto" onChange={(e) => setStory(e.target.value)} />
+          <button disabled={!me}>Scrivi</button>
+        </form>
         <ol className="log">
           {rolls.slice(0, 20).map((r) => {
             const last = r.id === lastMine;
@@ -205,6 +233,7 @@ function Table({ session }) {
         </ol>
       </>}
       {tab === 'voti' && <Tracks tracks={tracks} chars={chars} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
+      {tab === 'note' && <Pages pages={pages} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
       {tab === 'schede' && <>
         {chars.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
         <button className="link" onClick={addChar}>+ nuovo personaggio</button>
@@ -261,7 +290,7 @@ const SUSPENSE_MS = 1500;
 
 function LogEntry({ row, mine, onChallenge, canBurn, onBurn, offers = [], onOffer }) {
   const r = row.result;
-  const [rolling, setRolling] = useState(() => row.fresh && r.kind !== 'burn');
+  const [rolling, setRolling] = useState(() => row.fresh && r.kind !== 'burn' && r.kind !== 'note');
   // Quando arriva la sfida, di nuovo un attimo di suspense prima del risultato.
   const [wasPending, setWasPending] = useState(r.pending);
   if (wasPending && !r.pending) { setWasPending(false); setRolling(true); }
@@ -274,6 +303,7 @@ function LogEntry({ row, mine, onChallenge, canBurn, onBurn, offers = [], onOffe
   const who = <><time>{time}</time> <b>{row.player_name}</b> · {row.move}</>;
   const match = r.match && <em> Doppio!</em>;
   if (rolling) return <li className="rolling">{who}: <span className="dice" aria-label="dadi in movimento">⚀ ⚄ ⚂</span></li>;
+  if (r.kind === 'note') return <li className="note"><time>{time}</time> <b>{row.player_name}</b>: {r.testo}</li>;
   if (r.kind === 'burn') return <li className="burn">{who}: brucia lo slancio, ora è <b>{OUTCOMES[r.outcome]}</b>. Slancio a +2.</li>;
   if (r.kind === 'oracle') {
     return <li>{who}{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</li>;

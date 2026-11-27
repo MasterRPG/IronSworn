@@ -85,3 +85,9 @@ fieldset:disabled .link, fieldset:disabled .clock button, fieldset:disabled .tra
 .threat button.on { background: var(--weak); border-color: var(--weak); }
 .pos.difficolta { background: var(--miss); }
 .log li.pending { color: var(--muted); }
+.story { display: flex; gap: 8px; margin-bottom: 8px; }
+.story input { flex: 1; min-width: 0; }
+.log li.note { font-style: italic; }
+.page { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.page summary { cursor: pointer; }
+.page input, .page textarea { width: 100%; margin: 6px 0; }
