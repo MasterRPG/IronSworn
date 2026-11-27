@@ -90,6 +90,8 @@ function Table({ session }) {
   // La sessione in corso parte dopo l'ultima riga del registro finita nel Diario.
   const since = sessions.reduce((m, x) => Math.max(m, x.fino_a), 0);
   const [tab, setTab] = useState('tavolo');
+  // Il risultato chiuso da chi guarda: sta qui perché il Tavolo si smonta cambiando scheda.
+  const [closedRoll, setClosedRoll] = useState(null);
   const scene = party[0] ?? { id: 1, scorte: 5, scena: '', scena_voto: null };
   const uid = session.user.id;
   // Personaggio archiviato (morte o ritiro): resta in fondo alle schede, fuori dal gioco.
@@ -246,7 +248,7 @@ function Table({ session }) {
     setRolls([]);
   };
   const admin = session.user.email === ADMIN_EMAIL;
-  const act = { save, note, ask, challenge, burn, saveChar, saveParty, newScene, saveTrack, scorte, ODDS, since, sessionNumber: sessions.length + 1,
+  const act = { closedRoll, setClosedRoll, save, note, ask, challenge, burn, saveChar, saveParty, newScene, saveTrack, scorte, ODDS, since, sessionNumber: sessions.length + 1,
     clearLog: admin ? clearLog : null, closeSession: admin ? closeSession : null };
   const online = usePresence(session, me);
 

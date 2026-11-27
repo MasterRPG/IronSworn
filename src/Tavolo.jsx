@@ -162,7 +162,6 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
     if (!ok.includes(statKey)) setStatKey(ok[0]);
   };
   const current = rolls.find((r) => r.result.kind === 'action' || r.result.kind === 'progress');
-  const [closed, setClosed] = useState(null); // il risultato chiuso da chi guarda; resta nel registro
   const phase = usePhase(current);
   const roll = () => {
     act.save(move, { kind: 'action', pending: true, stat: values[statKey], adds: bonus.length, bonus, momentum, d6: d(6), statName: STATS[statKey] });
@@ -202,7 +201,7 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
       {phase === 'd6' && <div className="rolling-box" aria-live="polite"><Die spin /><span>Il d6 rotola…</span></div>}
       {phase === 'sfida' && <div className="rolling-box" aria-live="polite"><Die sides={10} spin /><Die sides={10} spin /><span>{current.result.sfidante} tira la sfida…</span></div>}
       {!phase && current?.result.pending && <Pending row={current} mine={current.user_id === uid} onChallenge={() => act.challenge(current)} />}
-      {!phase && current && !current.result.pending && current.id !== closed && <Result onClose={() => setClosed(current.id)} row={current} mine={current.user_id === uid} me={me} sceneVow={sceneVow} tracks={tracks} rolls={rolls} act={act} />}
+      {!phase && current && !current.result.pending && current.id !== act.closedRoll && <Result onClose={() => act.setClosedRoll(current.id)} row={current} mine={current.user_id === uid} me={me} sceneVow={sceneVow} tracks={tracks} rolls={rolls} act={act} />}
     </section>
   );
 }
