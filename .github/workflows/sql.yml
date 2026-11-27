@@ -1,0 +1,34 @@
+name: Applica SQL su Supabase
+
+on:
+  push:
+    branches: [main]
+    paths: ['supabase/**', '.github/workflows/sql.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: sql
+  cancel-in-progress: false
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Esegui i file SQL non ancora applicati
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB" ]; then echo "::error::Manca il segreto SUPABASE_DB_URL (vedi README)"; exit 1; fi
+          q() { psql "$DB" -v ON_ERROR_STOP=1 -qtA "$@"; }
+          # Registro dei file già eseguiti. schema, 002 e 003 erano stati eseguiti a mano prima di questa automazione.
+          q -c "create table if not exists public._migrazioni (nome text primary key, eseguito timestamptz default now());
+                revoke all on public._migrazioni from anon, authenticated;
+                insert into public._migrazioni (nome) values ('schema.sql'), ('002_schede.sql'), ('003_import_foglio.sql') on conflict do nothing;"
+          for f in $(ls supabase/*.sql | sort); do
+            n=$(basename "$f")
+            if [ "$(q -c "select 1 from public._migrazioni where nome = '$n'")" = "1" ]; then continue; fi
+            echo "Eseguo $n"
+            # Un file alla volta, tutto o niente: se fallisce non viene segnato e i successivi non partono.
+            q -1 -f "$f" -c "insert into public._migrazioni (nome) values ('$n')"
+          done

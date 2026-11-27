@@ -47,6 +47,12 @@ Per attivarla: nel SQL Editor esegui `supabase/007_sfida.sql`.
 
 Per attivarla: esegui `supabase/008_note.sql` nel SQL Editor.
 
+## SQL automatico
+
+A ogni modifica su `main`, l'azione *Applica SQL su Supabase* esegue da sola i file di `supabase/` non ancora eseguiti, in ordine, e li segna nella tabella `_migrazioni`. Non serve più il SQL Editor.
+
+Serve una volta sola il segreto `SUPABASE_DB_URL`: in Supabase premi *Connect* in alto, scegli *Session pooler* e copia l'indirizzo (`postgresql://postgres.…:[YOUR-PASSWORD]@…pooler.supabase.com:5432/postgres`), mettendo la password del database al posto di `[YOUR-PASSWORD]`. Su GitHub: *Settings → Secrets and variables → Actions → Secrets → New repository secret*, nome `SUPABASE_DB_URL`.
+
 ## Messa in linea (una volta sola)
 
 1. **Supabase.** Crea un account e un progetto gratuito su supabase.com.
