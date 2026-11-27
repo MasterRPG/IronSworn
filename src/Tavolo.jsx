@@ -211,10 +211,10 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
   const c = me?.data;
   const noGain = c && (c.salute >= 4 || c.spirito >= 4);
   const canApply = mine && me && r.kind === 'action';
-  // Subire una perdita: 1, o 2 se lo scontro/luogo aperto (o il voto della scena) è Formidabile o Leggendario. Si cambia a mano.
+  // Subire una perdita: 1, o 2 se il pericolo affrontato è Formidabile o Leggendario. Proposta dallo scontro o luogo aperto, si cambia a mano.
   const hard = (t) => t && t.grado !== 'Pericoloso';
   const danger = [...tracks].reverse().find((t) => !t.chiuso && (t.tipo === 'scontro' || t.tipo === 'luogo'));
-  const [loss, setLoss] = useState(hard(danger ?? sceneVow) ? 2 : 1);
+  const [loss, setLoss] = useState(hard(danger) ? 2 : 1);
   const hasLoss = entry?.options?.some(([, fx]) => fx && Object.values(fx).includes('perdita'));
   const amount = (k, v) => (v === 'perdita' ? (k === 'scorte' ? -loss : loss) : v);
   const apply = (label, fx) => {
@@ -261,7 +261,7 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
         <p className="label">{entry.pick === 'tutte' ? 'Ottieni' : entry.pick}</p>
         {hasLoss && <div className="row small-text"><span className="muted">Una perdita vale</span>
           {[1, 2].map((n) => <button key={n} className="chip" aria-pressed={loss === n} onClick={() => setLoss(n)}>{n}</button>)}
-          <span className="muted">{danger ? `${danger.nome}: ${danger.grado}` : sceneVow ? `voto della scena: ${sceneVow.grado}` : '2 se il pericolo è Formidabile o Leggendario'}</span></div>}
+          <span className="muted">1 se il pericolo è Pericoloso, 2 se è Formidabile o Leggendario{danger ? ` · aperto: ${danger.nome} (${danger.grado})` : ''}</span></div>}
         <ul className="choices">{entry.options.map(([label, fx]) => (
           <li key={label}><span className="grow">{label}</span>
             {canApply && fx && <button className="ghost small" disabled={done.includes(label) || (noGain && fx.slancio > 0)} onClick={() => apply(label, fx)}>{done.includes(label) ? 'Segnato ✓' : fx === 'prezzo' ? 'Tira' : 'Segna sulla scheda'}</button>}</li>
