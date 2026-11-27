@@ -4,7 +4,7 @@ import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats } from './rules/character.js';
 import { OUTCOMES, d } from './rules/dice.js';
 import { MOVE_TEXTS, FINISH_TEXTS, TABLES } from './rules/texts.js';
-import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress } from './rules/progress.js';
+import { KINDS, RANK_STEP, THREAT_SIZE, completeClocks, markProgress, setThreat } from './rules/progress.js';
 import { trackText } from './rules/diario.js';
 
 // Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
@@ -15,6 +15,16 @@ export const Segs = ({ n, size = 6, threat }) => (
     {Array.from({ length: size }, (_, i) => <span key={i} className={i < n ? 'seg f' : 'seg'} />)}
   </span>
 );
+
+// Una minaccia: segmenti gialli e n/6; con onSet anche i pulsanti − e +.
+export function ThreatMeter({ m, onSet }) {
+  return <>
+    <div className="meter"><span>Minaccia</span><Segs n={m.segmenti} threat /><span>{m.segmenti}/6</span>
+      {onSet && <span className="row push"><button className="ghost small" aria-label={`Abbassa la minaccia ${m.nome}`} onClick={() => onSet(m.segmenti - 1)} disabled={m.segmenti <= 0}>−</button>
+        <button className="ghost small" aria-label={`Avanza la minaccia ${m.nome}`} onClick={() => onSet(m.segmenti + 1)} disabled={m.segmenti >= THREAT_SIZE}>+</button></span>}</div>
+    {m.segmenti >= THREAT_SIZE && <p className="warn">La minaccia si compie: raccontatela, poi alzate il grado del voto o rinunciate.</p>}
+  </>;
+}
 
 // 10 orologi da 4 segmenti.
 export const Boxes = ({ segmenti }) => (
@@ -106,8 +116,8 @@ function Party({ chars, uid, scorte, onScorte }) {
 
 function SceneBar({ scene, sceneVow, tracks, onSave, onNew }) {
   const [form, setForm] = useState(null);
-  // La scena si collega a un voto con minaccia: i fallimenti la fanno avanzare, le tappe segnano progresso.
-  const vows = tracks.filter((t) => t.tipo === 'voto' && !t.chiuso && t.minaccia !== null);
+  // La scena si collega a un voto con minacce: i fallimenti ne fanno avanzare una, le tappe segnano progresso.
+  const vows = tracks.filter((t) => t.tipo === 'voto' && !t.chiuso && t.minacce.length > 0);
   const open = (f) => setForm(f);
   if (form) {
     return (
@@ -120,7 +130,7 @@ function SceneBar({ scene, sceneVow, tracks, onSave, onNew }) {
           {vows.map((v) => <button key={v.id} className="chip" aria-pressed={form.voto === v.id} onClick={() => setForm({ ...form, voto: v.id })}>{v.nome}</button>)}
         </div>
         {vows.length === 0 && <p className="muted small-text">Nessun voto ha una minaccia: aggiungila da "Voti".</p>}
-        <p className="muted small-text">I fallimenti in questa scena propongono di avanzare la minaccia del voto, le tappe di segnarne il progresso.</p>
+        <p className="muted small-text">I fallimenti in questa scena propongono di avanzare una minaccia del voto, le tappe di segnarne il progresso.</p>
         <div className="actions">
           <button className="ghost" onClick={() => setForm(null)}>Annulla</button>
           <button onClick={() => { (form.nuova ? onNew : onSave)({ scena: form.scena.trim(), scena_voto: form.voto }); setForm(null); }} disabled={!form.scena.trim()}>{form.nuova ? 'Inizia la scena' : 'Salva'}</button>
@@ -236,7 +246,7 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
   // Nella scena di un voto: fallimento → avanza la minaccia, successo pieno → tappa. Sempre su conferma.
   const [asked, setAsked] = useState(false);
   const offer = mine && sceneVow && r.kind === 'action' && !asked && (
-    outcome === 'miss' && sceneVow.minaccia !== null && sceneVow.minaccia_segmenti < THREAT_SIZE ? 'threat' : outcome === 'strong' ? 'milestone' : null);
+    outcome === 'miss' && sceneVow.minacce.some((m) => m.segmenti < THREAT_SIZE) ? 'threat' : outcome === 'strong' ? 'milestone' : null);
   const beat = (c) => r.score > c || (burnRow && r.momentum > c);
   return (
     <div className="result">
@@ -277,9 +287,11 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
       </>}
       {offer === 'threat' && (
         <div className="offer">
-          <span>Fallimento in una scena del voto. <b>Avanzo la minaccia "{sceneVow.minaccia || sceneVow.nome}"?</b> ({sceneVow.minaccia_segmenti}/6)</span>
+          <span>Fallimento in una scena del voto. <b>Avanzo una minaccia?</b></span>
           <button className="ghost small" onClick={() => setAsked(true)}>No</button>
-          <button className="small" onClick={() => { act.saveTrack(sceneVow.id, { minaccia_segmenti: sceneVow.minaccia_segmenti + 1 }); setAsked(true); }}>Sì, avanza</button>
+          {sceneVow.minacce.filter((m) => m.segmenti < THREAT_SIZE).map((m) => (
+            <button key={m.id} className="small" onClick={() => { act.saveTrack(sceneVow.id, { minacce: setThreat(sceneVow.minacce, m.id, m.segmenti + 1) }); setAsked(true); }}>{m.nome} ({m.segmenti}/6)</button>
+          ))}
         </div>
       )}
       {offer === 'milestone' && (
@@ -300,10 +312,7 @@ function SceneVow({ t }) {
       <p className="vow-title">{t.nome}</p>
       <p className="muted small-text">{KINDS[t.tipo]} · {t.grado}{t.ferro ? ` · giurato su ${t.ferro}` : ''}</p>
       <Boxes segmenti={t.segmenti} />
-      {t.minaccia !== null && <>
-        <div className="meter"><span>Minaccia</span><Segs n={t.minaccia_segmenti} threat /><span>{t.minaccia_segmenti}/6</span></div>
-        <p>{t.minaccia}</p>
-      </>}
+      {t.minacce.map((m) => <div key={m.id} className="stack"><p>{m.nome}</p><ThreatMeter m={m} /></div>)}
     </section>
   );
 }

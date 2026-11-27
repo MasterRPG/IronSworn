@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Segs } from './Tavolo.jsx';
+import { ThreatMeter } from './Tavolo.jsx';
+import { addThreat, setThreat } from './rules/progress.js';
 
 // Pagine condivise, divise per tipo: groups = [[tipo, etichetta, testo del pulsante "nuovo"], …].
 export default function Pages({ pages, groups, onSave, onCreate, onDelete, onUpload }) {
@@ -121,7 +122,7 @@ const add = (groups, tipo) => groups.find(([t]) => t === tipo)[2].replace('+ ', 
 export function Threats({ tracks, onTrack, onNewVow }) {
   const [form, setForm] = useState(null); // { nome, voto }
   const vows = tracks.filter((t) => t.tipo === 'voto' && !t.chiuso);
-  const threats = vows.filter((t) => t.minaccia !== null);
+  const threats = vows.flatMap((t) => t.minacce.map((m) => ({ t, m })));
   const target = form && vows.find((v) => v.id === form.voto);
   return (
     <section>
@@ -136,18 +137,14 @@ export function Threats({ tracks, onTrack, onNewVow }) {
             {vows.map((v) => <button key={v.id} className="chip" aria-pressed={form.voto === v.id} onClick={() => setForm({ ...form, voto: v.id })}>{v.nome}</button>)}
             <button className="link" onClick={onNewVow}>+ Giura un nuovo voto</button>
           </div>
-          {target?.minaccia && <p className="warn">Questo voto ha già la minaccia "{target.minaccia}": la nuova la sostituisce e riparte da 0/6.</p>}
           <div className="actions"><button className="ghost" onClick={() => setForm(null)}>Annulla</button>
-            <button disabled={!form.nome.trim() || !target} onClick={() => { onTrack(target.id, { minaccia: form.nome.trim(), minaccia_segmenti: 0 }); setForm(null); }}>Salva</button></div>
+            <button disabled={!form.nome.trim() || !target} onClick={() => { onTrack(target.id, { minacce: addThreat(target.minacce, form.nome.trim()) }); setForm(null); }}>Salva</button></div>
         </div>
       )}
-      {threats.map((t) => (
-        <div key={t.id} className="item">
-          <p className="vow-title">{t.minaccia}</p>
-          <div className="meter"><span>Minaccia</span><Segs n={t.minaccia_segmenti} threat /><span>{t.minaccia_segmenti}/6</span>
-            <span className="row push"><button className="ghost small" aria-label={`Abbassa la minaccia ${t.minaccia}`} onClick={() => onTrack(t.id, { minaccia_segmenti: t.minaccia_segmenti - 1 })} disabled={t.minaccia_segmenti <= 0}>−</button>
-              <button className="ghost small" aria-label={`Avanza la minaccia ${t.minaccia}`} onClick={() => onTrack(t.id, { minaccia_segmenti: t.minaccia_segmenti + 1 })} disabled={t.minaccia_segmenti >= 6}>+</button></span></div>
-          {t.minaccia_segmenti >= 6 && <p className="warn">La minaccia si compie: raccontatela, poi alzate il grado del voto o rinunciate.</p>}
+      {threats.map(({ t, m }) => (
+        <div key={`${t.id}:${m.id}`} className="item">
+          <p className="vow-title">{m.nome}</p>
+          <ThreatMeter m={m} onSet={(n) => onTrack(t.id, { minacce: setThreat(t.minacce, m.id, n) })} />
           <p className="muted small-text">Legata al voto: {t.nome}</p>
         </div>
       ))}
