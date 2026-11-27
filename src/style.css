@@ -84,3 +84,4 @@ fieldset:disabled .link, fieldset:disabled .clock button, fieldset:disabled .tra
   linear-gradient(var(--muted), var(--muted)) center / 1px 100% no-repeat, linear-gradient(var(--muted), var(--muted)) center / 100% 1px no-repeat; opacity: .5; }
 .threat button.on { background: var(--weak); border-color: var(--weak); }
 .pos.difficolta { background: var(--miss); }
+.log li.pending { color: var(--muted); }
