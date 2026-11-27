@@ -87,7 +87,10 @@ function Table({ session }) {
   const scene = party[0] ?? { id: 1, scorte: 5, scena: '', scena_voto: null };
   const sceneVow = tracks.find((t) => t.id === scene.scena_voto);
   const uid = session.user.id;
-  const me = chars.find((c) => c.owner === uid);
+  // Personaggio archiviato (morte o ritiro): resta in fondo alle schede, fuori dal gioco.
+  const active = chars.filter((c) => !c.data.archiviato);
+  const archived = chars.filter((c) => c.data.archiviato);
+  const me = active.find((c) => c.owner === uid);
   const scorte = scene.scorte;
 
   // Scegliere un personaggio libero lo rende tuo; "cambia" lo lascia libero.
@@ -191,7 +194,7 @@ function Table({ session }) {
           ? <span>Sono <b>{me.data.nome}</b> <button className="link" onClick={() => setOwner(me.id, null)}>cambia</button></span>
           : <label>Sono <select value="" onChange={(e) => setOwner(Number(e.target.value), uid)}>
               <option value="" disabled>scegli…</option>
-              {chars.filter((c) => !c.owner).map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>}
+              {active.filter((c) => !c.owner).map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>}
         <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveParty({ scorte: clamp(e.target.value, LIMITS.scorte) })} /></label>
         <button className="link" onClick={() => supabase.auth.signOut()}>Esci</button>
       </header>
@@ -235,8 +238,15 @@ function Table({ session }) {
       {tab === 'voti' && <Tracks tracks={tracks} chars={chars} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
       {tab === 'note' && <Pages pages={pages} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
       {tab === 'schede' && <>
-        {chars.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
+        {active.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
         <button className="link" onClick={addChar}>+ nuovo personaggio</button>
+        {archived.length > 0 && <details className="archived"><summary>Archiviati ({archived.length})</summary>
+          {archived.map((c) => (
+            <div key={c.id}>
+              <Sheet c={c.data} readOnly onChange={() => {}} />
+              {c.owner === uid && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && saveChar(c.id, { ...c.data, archiviato: undefined })}>riporta in gioco</button>}
+            </div>
+          ))}</details>}
       </>}
     </main>
   );

@@ -47,6 +47,10 @@ Per attivarla: nel SQL Editor esegui `supabase/007_sfida.sql`.
 
 Per attivarla: esegui `supabase/008_note.sql` nel SQL Editor.
 
+## Archiviare un personaggio
+
+Nella propria scheda, *Archivia il personaggio (morte o ritiro)* chiede conferma e lo sposta in fondo a *Schede*, tra gli archiviati, in sola lettura e fuori dal gioco (scontri, voti, "Sono…"). Chi lo giocava può riportarlo in gioco. Per un personaggio nuovo: *+ nuovo personaggio*, che diventa tuo.
+
 ## SQL automatico
 
 A ogni modifica su `main`, l'azione *Applica SQL su Supabase* esegue da sola i file di `supabase/` non ancora eseguiti, in ordine, e li segna nella tabella `_migrazioni`. Non serve più il SQL Editor.
