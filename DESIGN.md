@@ -79,3 +79,13 @@ La forma dice cosa fa: **rettangolo = azione**, **pillola = scelta**, **testo so
 - **Tracciato di progresso** (voti, viaggi, scontri): 10 caselle da 22 px con 4 segmenti, blu.
 - **Esperienza**: 20 quadratini da 14 px, blu.
 - Sotto un tracciato, una riga meta (12 px) con il conteggio.
+
+## 8. Tabelle e testi di regole
+
+Regola fissa: ogni riquadro va impaginato con cura, non solo "funzionante".
+
+- Le tabelle sono tabelle vere (`.ref-table`): intestazione piccola e grigia, righe separate da un filetto, niente righe a capo incolonnate a mano.
+- La colonna del dado è stretta, allineata a destra, con numeri tabulari (`tabular-nums`), separata dal testo.
+- Più tabelle nello stesso riquadro hanno le colonne alla stessa larghezza.
+- I rimandi alle mosse e alle statistiche nel testo (`.ref`) sono in grassetto.
+- Prima di pubblicare: screenshot reale a misura desktop, guardato con occhio critico.

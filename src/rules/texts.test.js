@@ -22,8 +22,11 @@ test('ogni tabella dà un testo anche ai bordi del dado', () => {
 });
 
 test('ogni tabella si può leggere per intero', () => {
-  for (const name of Object.keys(TABLES)) assert.ok(TABLE_INFO[name]?.every(([, rows]) => rows.length >= 10), name);
-  assert.equal(TABLE_INFO['Pagare il prezzo'][0][1][1], '3–5. Una persona o una comunità di cui ti fidavi perde fiducia in te, o agisce contro di te.');
+  for (const name of Object.keys(TABLES)) {
+    for (const t of TABLE_INFO[name]) assert.ok(t.rows.length >= 10 && t.rows.every((r) => r.length === t.cols.length && r.every(Boolean)), name);
+  }
+  assert.deepEqual(TABLE_INFO['Pagare il prezzo'][0].rows[1], ['3–5', 'Una persona o una comunità di cui ti fidavi perde fiducia in te, o agisce contro di te.']);
+  assert.deepEqual(TABLE_INFO['Luogo pericoloso'][0].rows[0], ['1', 'Tumulo', 'Tombe, ossa, corridoi stretti di pietra']);
 });
 
 test('ogni mossa dice quando si usa', () => {

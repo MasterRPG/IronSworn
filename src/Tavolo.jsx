@@ -205,23 +205,37 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
   );
 }
 
-// Tutto il testo di una mossa: statistiche ammesse e i tre esiti con le scelte.
+// Rimandi alle mosse e statistiche da tirare, in grassetto come nel manuale.
+const REF = /(Subire una perdita|Pagare il prezzo|Portare a termine|Raggiungere una tappa|Giurare sul Ferro|Intraprendere un viaggio|Sfidare il pericolo|Aiutare un compagno|Riposare|\+(?:Fisico|Animo|Ingegno|Scorte))/;
+const Rich = ({ text }) => text.split(REF).map((part, i) => (i % 2 ? <b key={i} className="ref">{part}</b> : part));
+
+// Tutto il testo di una mossa: quando si usa, cosa si tira, i tre esiti con le scelte.
 function MoveInfo({ move }) {
   const texts = MOVE_TEXTS[move.name];
   const when = MOVE_TRIGGERS[move.name];
   return <>
-    <p><em className="trigger">{when.when}</em>{when.text.slice(when.when.length)}</p>
-    {when.list && <ul className="info-list">{when.list.map((l) => <li key={l}>{l}</li>)}</ul>}
+    <p className="info-lead"><em className="trigger">{when.when}</em><Rich text={when.text.slice(when.when.length)} /></p>
+    {when.list && <ul className="info-list">{when.list.map((l) => <li key={l}><Rich text={l} /></li>)}</ul>}
     {['strong', 'weak', 'miss'].map((o) => (
-      <div key={o} className="stack group">
-        <p className={`outcome ${o}`}>{OUTCOMES[o]}</p>
-        <p>{texts[o].text}</p>
+      <div key={o} className="info-outcome">
+        <p className={`info-outcome-title ${o}`}>{OUTCOMES[o]}</p>
+        <p><Rich text={texts[o].text} /></p>
         {texts[o].options && <><p className="label">{texts[o].pick === 'tutte' ? 'Ottieni' : texts[o].pick}</p>
-          <ul className="info-list">{texts[o].options.map(([label]) => <li key={label}>{label}</li>)}</ul></>}
+          <ul className="info-list">{texts[o].options.map(([label]) => <li key={label}><Rich text={label} /></li>)}</ul></>}
       </div>
     ))}
-    {when.note && <p className="muted group">{when.note}</p>}
+    {when.note && <p className="info-note"><Rich text={when.note} /></p>}
   </>;
+}
+
+// Una tabella del manuale: colonna del dado allineata a destra, filetti tra le righe.
+function RefTable({ cols, rows }) {
+  return (
+    <table className={`ref-table cols-${cols.length}`}>
+      <thead><tr>{cols.map((c, i) => <th key={c} className={i ? '' : 'n'} scope="col">{c}</th>)}</tr></thead>
+      <tbody>{rows.map(([n, ...cells]) => <tr key={n}><td className="n">{n}</td>{cells.map((c, i) => <td key={i}><Rich text={c} /></td>)}</tr>)}</tbody>
+    </table>
+  );
 }
 
 function Pending({ row, mine, onChallenge }) {
@@ -433,7 +447,7 @@ export function Oracolo({ rolls, me, act }) {
         <h2 className="section-title">Tabelle</h2>
         <div className="row">{Object.keys(TABLES).map((name) => (
           <span key={name} className="with-info rect"><button className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
-            <Info title={name}>{TABLE_INFO[name].map(([col, rows]) => <div key={col} className="stack"><p className="label">{col}</p><ol className="info-list">{rows.map((r) => <li key={r}>{r}</li>)}</ol></div>)}</Info></span>
+            <Info title={name}>{TABLE_INFO[name].map((t) => <RefTable key={t.cols[1]} {...t} />)}</Info></span>
         ))}</div>
         {lastTable && (
           <div className="answer">
