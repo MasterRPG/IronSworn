@@ -34,6 +34,12 @@ Per attivarla: nel SQL Editor esegui `supabase/004_proprietari.sql`.
 
 Per attivarla: nel SQL Editor esegui `supabase/005_voti.sql`, poi `supabase/006_import_voti.sql` per i voti del foglio.
 
+## La sfida la tira un altro giocatore
+
+Regola della casa: chi fa la mossa tira il d6 (o, per Portare a termine, conta gli orologi); il tiro resta "in attesa della sfida" e agli altri compare **Tira la sfida**. Chi gioca da solo può tirarla da sé. Vale per il tiro azione e per Portare a termine; l'oracolo resta com'è.
+
+Per attivarla: nel SQL Editor esegui `supabase/007_sfida.sql`.
+
 ## Messa in linea (una volta sola)
 
 1. **Supabase.** Crea un account e un progetto gratuito su supabase.com.

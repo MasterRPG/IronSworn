@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { actionRoll, progressRoll, oracle, rollDice, ODDS, OUTCOMES } from './rules/dice.js';
+import { actionRoll, progressRoll, oracle, rollDice, d, ODDS, OUTCOMES } from './rules/dice.js';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats, emptyCharacter } from './rules/character.js';
 import Sheet, { Text } from './Sheet.jsx';
@@ -126,7 +126,7 @@ function Table({ session }) {
     if (error) setError(error.message);
   };
   const finish = (t) => {
-    save(`Portare a termine: ${t.nome}`, { ...progressRoll({ clocks: completeClocks(t.segmenti) }, rollDice.progress()), trackId: t.id });
+    save(`Portare a termine: ${t.nome}`, { kind: 'progress', pending: true, clocks: completeClocks(t.segmenti), trackId: t.id });
     setTab('tavolo');
   };
 
@@ -137,6 +137,17 @@ function Table({ session }) {
     if (error) return setError(error.message);
     setError('');
     setRolls((rs) => upsert(rs, { ...data, fresh: true }));
+  };
+  // Regola della casa: chi fa la mossa tira il d6, un altro giocatore tira i due dadi sfida.
+  const challenge = async (row) => {
+    const r = row.result;
+    const dice = rollDice.progress();
+    const full = r.kind === 'action' ? actionRoll(r, { d6: r.d6, ...dice }) : progressRoll(r, dice);
+    const result = { ...r, ...full, pending: false, sfidante: me?.data.nome ?? 'qualcuno' };
+    // Solo se è ancora in attesa: se due persone cliccano insieme, vale il primo.
+    const { data, error } = await supabase.from('rolls').update({ result }).eq('id', row.id).eq('result->>pending', 'true').select();
+    if (error) return setError(error.message);
+    if (data[0]) setRolls((rs) => upsert(rs, { ...data[0], fresh: true }));
   };
   const burn = async (r) => {
     await save(r.move, { kind: 'burn', of: r.id, outcome: r.result.burn.outcome });
@@ -188,7 +199,7 @@ function Table({ session }) {
               r.result.outcome === 'strong' &&
                 { label: `Raggiungere una tappa (${sceneVow.nome})`, run: () => saveTrack(sceneVow.id, { segmenti: markProgress(sceneVow.segmenti, sceneVow.grado) }) },
             ].filter(Boolean) : [];
-            return <LogEntry key={r.id} row={r} canBurn={last && !burned.has(r.id)} onBurn={() => burn(r)}
+            return <LogEntry key={r.id} row={r} mine={r.user_id === uid} onChallenge={() => challenge(r)} canBurn={last && !burned.has(r.id)} onBurn={() => burn(r)}
               offers={offers} onOffer={(o) => { if (o) o.run(); setDismissed(new Set(dismissed).add(r.id)); }} />;
           })}
         </ol>
@@ -216,7 +227,7 @@ function ActionPanel({ me, scorte, onRoll }) {
     const allowed = ACTION_MOVES.find((m) => m.name === e.target.value).stats;
     if (!allowed.includes(statKey)) setStatKey(allowed[0]);
   };
-  const roll = () => onRoll(move, { ...actionRoll({ stat: values[statKey], adds, momentum }, rollDice.action()), statName: STATS[statKey] });
+  const roll = () => onRoll(move, { kind: 'action', pending: true, stat: values[statKey], adds, momentum, d6: d(6), statName: STATS[statKey] });
   return (
     <section>
       <h2>Tiro azione</h2>
@@ -248,14 +259,17 @@ function OraclePanel({ onRoll }) {
 // Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
 const SUSPENSE_MS = 1500;
 
-function LogEntry({ row, canBurn, onBurn, offers = [], onOffer }) {
+function LogEntry({ row, mine, onChallenge, canBurn, onBurn, offers = [], onOffer }) {
   const r = row.result;
   const [rolling, setRolling] = useState(() => row.fresh && r.kind !== 'burn');
+  // Quando arriva la sfida, di nuovo un attimo di suspense prima del risultato.
+  const [wasPending, setWasPending] = useState(r.pending);
+  if (wasPending && !r.pending) { setWasPending(false); setRolling(true); }
   useEffect(() => {
     if (!rolling) return;
     const t = setTimeout(() => setRolling(false), SUSPENSE_MS);
     return () => clearTimeout(t);
-  }, []);
+  }, [rolling]);
   const time = new Date(row.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const who = <><time>{time}</time> <b>{row.player_name}</b> · {row.move}</>;
   const match = r.match && <em> Doppio!</em>;
@@ -264,12 +278,24 @@ function LogEntry({ row, canBurn, onBurn, offers = [], onOffer }) {
   if (r.kind === 'oracle') {
     return <li>{who}{r.question && <>: «{r.question}»</>} ({r.oddsLabel}) → {r.value}: <b>{r.yes ? 'Sì' : 'No'}</b>{match}</li>;
   }
+  if (r.pending) {
+    const what = r.kind === 'action'
+      ? <>d6 {r.d6} + {r.statName} {r.stat}{r.adds ? ` + ${r.adds}` : ''}</>
+      : <>orologi completi {r.clocks}</>;
+    return (
+      <li className="pending">
+        {who}: {what}. In attesa della sfida…
+        {!mine && <button className="small" onClick={onChallenge}>Tira la sfida</button>}
+        {mine && <button className="small link" onClick={onChallenge}>siete in uno? tirala tu</button>}
+      </li>
+    );
+  }
   const detail = r.kind === 'action'
     ? <>d6 {r.d6}{r.d6Value !== r.d6 && ' (vale 0)'} + {r.statName} {r.stat}{r.adds ? ` + ${r.adds}` : ''} = {r.score}</>
     : <>orologi {r.score}</>;
   return (
     <li className={r.outcome}>
-      {who}: {detail} contro {r.c1} e {r.c2} → <b>{OUTCOMES[r.outcome]}</b>{match}
+      {who}: {detail} contro {r.c1} e {r.c2}{r.sfidante && <span className="muted"> (sfida di {r.sfidante})</span>} → <b>{OUTCOMES[r.outcome]}</b>{match}
       {r.burn && canBurn && <button className="small" onClick={onBurn}>Brucia lo slancio ({OUTCOMES[r.burn.outcome]})</button>}
       {offers.map((o) => <button key={o.label} className="small" onClick={() => onOffer(o)}>{o.label}</button>)}
       {offers.length > 0 && <button className="small link" onClick={() => onOffer(null)}>no</button>}
