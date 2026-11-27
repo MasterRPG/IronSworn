@@ -336,11 +336,16 @@ function LogEntry({ row, mine, onChallenge }) {
   );
 }
 
+// "d10 3 + 7" → [10, 10]: i dadi da far rotolare per una tabella.
+const tableDice = (dice) => { const [kind, ...rest] = dice.split(' '); return rest.filter((x) => x !== '+').map(() => Number(kind.slice(1))); };
+
 export function Oracolo({ rolls, me, act }) {
   const [question, setQuestion] = useState('');
   const [odds, setOdds] = useState('cinquanta');
   const lastOracle = rolls.find((r) => r.result.kind === 'oracle');
   const lastTable = rolls.find((r) => r.result.kind === 'table');
+  const oracleSpin = usePhase(lastOracle);
+  const tableSpin = usePhase(lastTable);
   return (
     <div className="two-col">
       <section>
@@ -352,12 +357,12 @@ export function Oracolo({ rolls, me, act }) {
         <div className="roll-actions"><button disabled={!me} onClick={() => { act.ask(odds, question.trim()); setQuestion(''); }}>Chiedi</button></div>
         {lastOracle && (
           <div className="answer">
-            <span className={`num ${lastOracle.result.yes ? 'yes' : 'no'}`}>{lastOracle.result.value}</span>
-            <div>
+            {oracleSpin ? <Die sides={100} spin /> : <span className={`num ${lastOracle.result.yes ? 'yes' : 'no'}`}>{lastOracle.result.value}</span>}
+            {!oracleSpin && <div>
               {lastOracle.result.question && <p>«{lastOracle.result.question}»</p>}
               <p className={lastOracle.result.yes ? 'outcome strong' : 'outcome miss'}>{lastOracle.result.yes ? 'Sì' : 'No'}</p>
               <p className="muted small-text">{lastOracle.player_name} · {lastOracle.result.oddsLabel}: sì da {act.ODDS.find((o) => o.key === lastOracle.result.odds)?.min} in su{lastOracle.result.match ? ' · doppio: risposta estrema o colpo di scena' : ''}</p>
-            </div>
+            </div>}
           </div>
         )}
       </section>
@@ -368,7 +373,9 @@ export function Oracolo({ rolls, me, act }) {
         ))}</div>
         {lastTable && (
           <div className="answer">
-            <div><p className="muted small-text">{lastTable.player_name} · {lastTable.result.name} · {lastTable.result.dice}</p><p>{lastTable.result.text}</p></div>
+            {tableSpin
+              ? <div className="dice-row">{tableDice(lastTable.result.dice).map((sides, i) => <Die key={i} sides={sides} spin />)}</div>
+              : <div><p className="muted small-text">{lastTable.player_name} · {lastTable.result.name} · {lastTable.result.dice}</p><p>{lastTable.result.text}</p></div>}
           </div>
         )}
         <p className="muted small-text">Le tabelle vengono dal Google Doc. Ogni risultato finisce anche nel registro, visibile a tutti.</p>
