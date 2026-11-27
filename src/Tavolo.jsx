@@ -150,6 +150,7 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
     if (!ok.includes(statKey)) setStatKey(ok[0]);
   };
   const current = rolls.find((r) => r.result.kind === 'action' || r.result.kind === 'progress');
+  const [closed, setClosed] = useState(null); // il risultato chiuso da chi guarda; resta nel registro
   const phase = usePhase(current);
   const roll = () => {
     act.save(move, { kind: 'action', pending: true, stat: values[statKey], adds: bonus.length, bonus, momentum, d6: d(6), statName: STATS[statKey] });
@@ -186,7 +187,7 @@ function RollPanel({ me, uid, scorte, scene, sceneVow, tracks, rolls, act }) {
       {phase === 'd6' && <div className="rolling-box" aria-live="polite"><Die spin /><span>Il d6 rotola…</span></div>}
       {phase === 'sfida' && <div className="rolling-box" aria-live="polite"><Die sides={10} spin /><Die sides={10} spin /><span>{current.result.sfidante} tira la sfida…</span></div>}
       {!phase && current?.result.pending && <Pending row={current} mine={current.user_id === uid} onChallenge={() => act.challenge(current)} />}
-      {!phase && current && !current.result.pending && <Result row={current} mine={current.user_id === uid} me={me} sceneVow={sceneVow} tracks={tracks} rolls={rolls} act={act} />}
+      {!phase && current && !current.result.pending && current.id !== closed && <Result onClose={() => setClosed(current.id)} row={current} mine={current.user_id === uid} me={me} sceneVow={sceneVow} tracks={tracks} rolls={rolls} act={act} />}
     </section>
   );
 }
@@ -205,7 +206,7 @@ function Pending({ row, mine, onChallenge }) {
   );
 }
 
-function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
+function Result({ row, mine, me, sceneVow, tracks, rolls, act, onClose }) {
   const r = row.result;
   const burnRow = rolls.find((x) => x.result.kind === 'burn' && x.result.of === row.id);
   const outcome = burnRow ? burnRow.result.outcome : r.outcome;
@@ -239,8 +240,9 @@ function Result({ row, mine, me, sceneVow, tracks, rolls, act }) {
   return (
     <div className="result">
       <div className="result-head">
-        <span>{row.player_name} · {row.move}{r.statName ? ` · ${r.statName}` : ''}{r.sfidante ? ` · sfida tirata da ${r.sfidante}` : ''}</span>
+        <span className="grow">{row.player_name} · {row.move}{r.statName ? ` · ${r.statName}` : ''}{r.sfidante ? ` · sfida tirata da ${r.sfidante}` : ''}</span>
         {r.match && <span className="badge">DOPPIO</span>}
+        <button className="link" onClick={onClose}>Chiudi</button>
       </div>
       <div className="dice-row">
         {r.kind === 'action' && <><span className="die-col"><Die value={r.d6Value} />d6</span><span className="muted">+ {r.stat}{r.adds ? ` + ${r.adds}` : ''} =</span></>}
