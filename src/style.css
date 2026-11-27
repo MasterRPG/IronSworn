@@ -128,7 +128,7 @@ details[open] > summary { margin-bottom: var(--sp-2); }
 .progress { display: inline-flex; flex-wrap: wrap; gap: var(--sp-1); }
 .box { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; width: 22px; height: 22px; border: 1px solid var(--line2); border-radius: var(--r-sm); overflow: hidden; background: var(--line2); }
 .box > span { background: var(--bg); }
-.box > span.f { background: var(--strong); }
+.box > span.f { background: var(--kind, var(--strong)); }
 
 /* Tiro */
 .scene-bar { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; padding: var(--sp-2) var(--sp-3); }
