@@ -23,20 +23,33 @@ export default function App() {
   return <Table session={session} />;
 }
 
+// Si entra con un nome e la password comune del gruppo. Supabase vuole un'email: la ricaviamo dal nome.
+// shortcut: chi conosce la password può entrare con qualunque nome; dopo aver creato gli account, chiudere le iscrizioni su Supabase.
+const emailOf = (nome) => `${nome.trim().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '')}@ironsworn.example.com`;
+
 function Login() {
-  const [email, setEmail] = useState('');
+  const [nome, setNome] = useState(() => localStorage.getItem('nome') || '');
+  const [password, setPassword] = useState('');
   const [state, setState] = useState('');
   const send = async (e) => {
     e.preventDefault();
-    setState('invio…');
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } });
-    setState(error ? `Errore: ${error.message}` : 'Controlla la posta: ti ho mandato il link per entrare.');
+    if (!emailOf(nome).split('@')[0]) return setState('Il nome deve contenere almeno una lettera.');
+    setState('un attimo…');
+    localStorage.setItem('nome', nome.trim());
+    const credentials = { email: emailOf(nome), password };
+    const { error } = await supabase.auth.signInWithPassword(credentials);
+    if (!error) return setState('');
+    // Primo accesso con questo nome: crea l'account (funziona finché le iscrizioni sono aperte).
+    const { data, error: signUpError } = await supabase.auth.signUp({ ...credentials, options: { data: { nome: nome.trim() } } });
+    if (signUpError || !data.session) return setState('Nome o password sbagliati.');
+    setState('');
   };
   return (
     <main>
       <h1>Ironsworn</h1>
-      <form onSubmit={send}>
-        <label>Email <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+      <form onSubmit={send} className="login">
+        <label>Nome <input required autoComplete="username" value={nome} onChange={(e) => setNome(e.target.value)} /></label>
+        <label>Password <input type="password" required minLength={6} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
         <button>Entra</button>
       </form>
       <p role="status">{state}</p>

@@ -28,7 +28,9 @@ Per attivarla su un progetto già in linea: nel SQL Editor esegui `supabase/002_
 3. **GitHub Pages.** *Settings → Pages → Source: GitHub Actions*. A ogni modifica su `main` il sito si aggiorna da solo,
    all'indirizzo `https://masterrpg.github.io/IronSworn/`.
 
-Ognuno entra con la sua email: arriva un link, e si è dentro.
+Si entra con un nome e la password comune del gruppo (almeno 6 caratteri). Il primo accesso con un nome crea l'account.
+Su Supabase, in *Authentication → Sign In / Providers → Email*, va spento **Confirm email**. Quando tutti hanno fatto il primo accesso, spegnete
+**Allow new users to sign up** (stessa pagina): da quel momento nessun altro può creare account.
 
 ## Sviluppo
 

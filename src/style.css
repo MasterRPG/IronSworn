@@ -47,3 +47,4 @@ label.inline { justify-content: flex-start; margin: 0; }
 .clock button { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 2px solid var(--muted); background: transparent; }
 .clock button.on { background: var(--miss); border-color: var(--miss); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+.login { max-width: 360px; }
