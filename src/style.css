@@ -129,29 +129,16 @@ label.col { flex-direction: column; align-items: stretch; }
 .threat button.on { background: var(--weak); border-color: var(--weak); }
 .archived { margin-top: 16px; }
 
-/* Voti e tracciati (fase 3) */
-.tracks { display: grid; gap: 12px; }
-.track-card, .new-track { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-.new-track h3 { margin: 0 0 4px; }
-.new-track input, .new-track select { flex: 1; min-width: 0; }
+/* Voti */
+.track-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); align-items: start; }
+@media (max-width: 420px) { .track-grid { grid-template-columns: minmax(0, 1fr); } }
 .track-card.closed { opacity: .65; }
-.track-card header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.track-name { flex: 1; min-width: 12em; font-weight: 600; }
-.track-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
-.track-row label { flex: 1; min-width: 14em; margin: 0; }
-.track-row label input { flex: 1; min-width: 0; }
-.small-actions { justify-content: flex-end; }
-.pclock { width: 22px; height: 22px; border-radius: 4px; border: 2px solid var(--muted);
-  background: conic-gradient(var(--strong) 0 var(--p), transparent var(--p) 100%); position: relative; }
-.pclock::after { content: ''; position: absolute; inset: 0; background:
-  linear-gradient(var(--muted), var(--muted)) center / 1px 100% no-repeat, linear-gradient(var(--muted), var(--muted)) center / 100% 1px no-repeat; opacity: .5; }
-.pos { background: #1f3247; color: #BFD6EC; }
-.pos.difficolta { background: #3a2320; color: #F2B3A9; }
+.threat-box { margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: var(--card2); }
+.pos { background: #1f3247; color: #BFD6EC; border-color: #1f3247; }
+.pos.difficolta { background: #3a2320; color: #F2B3A9; border-color: #3a2320; }
 
-/* Note */
-.page { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: 8px 0; }
-.page summary { cursor: pointer; }
-.page input, .page textarea { width: 100%; margin: 6px 0; }
+/* Luoghi e minacce */
+.page-text { white-space: pre-wrap; margin: 10px 0 14px; }
 .login { max-width: 360px; margin-top: 24px; }
 
 /* Schede come nel mockup */

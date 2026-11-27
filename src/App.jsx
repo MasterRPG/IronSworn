@@ -138,6 +138,7 @@ function Table({ session }) {
     const { data, error } = await supabase.from('pages').insert(row).select().single();
     if (error) return setError(error.message);
     setPages((ps) => [...ps.filter((x) => x.id !== data.id), data]);
+    return data.id;
   };
   const deletePage = async (id) => {
     setPages((ps) => ps.filter((x) => x.id !== id));
@@ -200,8 +201,8 @@ function Table({ session }) {
       {error && <p role="alert" className="error">{error} <button className="link" onClick={() => setError('')}>chiudi</button></p>}
       {tab === 'tavolo' && <Tavolo chars={active} uid={uid} me={me} scorte={scorte} scene={scene} tracks={tracks} rolls={rolls} act={act} />}
       {tab === 'oracolo' && <Oracolo rolls={rolls} me={me} act={act} />}
-      {tab === 'voti' && <Tracks tracks={tracks} chars={chars} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
-      {tab === 'note' && <Pages pages={pages} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
+      {tab === 'voti' && <Tracks tracks={tracks} chars={chars} me={me} scene={scene} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
+      {tab === 'note' && <Pages pages={pages} tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
       {tab === 'schede' && <Schede chars={chars} uid={uid} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
     </main>
   );
