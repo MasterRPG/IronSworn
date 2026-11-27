@@ -246,6 +246,8 @@ fieldset.plain { border: 0; padding: 0; min-width: 0; }
 .with-info > .info:hover:not(:disabled) { background: var(--line); color: var(--fg); border-left: 1px solid var(--line); }
 .with-info:has([aria-pressed=true]) { border-color: var(--accent); }
 .with-info:has([aria-pressed=true]) > .info { border-left-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+/* Trigger della mossa: corsivo come nel manuale, in evidenza */
+.trigger { font-style: italic; font-weight: 600; color: var(--fg); }
 .info-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
 .pc.with-img .img-button { height: 100%; }
 .pc.with-img .meter > span:first-child { width: 48px; }

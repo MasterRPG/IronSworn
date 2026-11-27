@@ -210,7 +210,7 @@ function MoveInfo({ move }) {
   const texts = MOVE_TEXTS[move.name];
   const when = MOVE_TRIGGERS[move.name];
   return <>
-    <p>{when.text}</p>
+    <p><em className="trigger">{when.when}</em>{when.text.slice(when.when.length)}</p>
     {when.list && <ul className="info-list">{when.list.map((l) => <li key={l}>{l}</li>)}</ul>}
     {['strong', 'weak', 'miss'].map((o) => (
       <div key={o} className="stack group">
