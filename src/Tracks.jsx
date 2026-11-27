@@ -24,8 +24,7 @@ function TrackForm({ form, setForm, chars, me, onSave }) {
       </>}
       {isVow && <>
         <label>Oggetto di ferro su cui giurate<input value={form.ferro} placeholder="es. l'Ancora" onChange={(e) => setForm({ ...form, ferro: e.target.value })} /></label>
-        {!form.id && <label>Minaccia (facoltativa, se ne aggiungono altre dalla scheda del voto)<input value={form.minaccia} placeholder="es. Il bosco reclama altri bambini" onChange={(e) => setForm({ ...form, minaccia: e.target.value })} /></label>}
-        {!form.id && <p className="muted small-text">La minaccia parte da 0 su 6 e avanza con i fallimenti nelle scene del voto. Per tirare Giurare sul Ferro usa la mossa dal Tavolo.</p>}
+        {!form.id && <label>Minaccia (facoltativa)<input value={form.minaccia} placeholder="es. Il bosco reclama altri bambini" onChange={(e) => setForm({ ...form, minaccia: e.target.value })} /></label>}
       </>}
       <div className="actions"><button className="ghost" onClick={() => setForm(null)}>Annulla</button><button disabled={!ok} onClick={() => { onSave(form); setForm(null); }}>Salva</button></div>
     </div>

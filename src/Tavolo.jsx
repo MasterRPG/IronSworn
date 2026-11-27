@@ -131,7 +131,6 @@ function SceneBar({ scene, sceneVow, tracks, onSave, onNew }) {
           {vows.map((v) => <button key={v.id} className="chip" aria-pressed={form.voto === v.id} onClick={() => setForm({ ...form, voto: v.id })}>{v.nome}</button>)}
         </div>
         {vows.length === 0 && <p className="muted small-text">Nessun voto ha una minaccia: aggiungila da "Voti".</p>}
-        <p className="muted small-text">I fallimenti in questa scena propongono di avanzare una minaccia del voto, le tappe di segnarne il progresso.</p>
         <div className="actions">
           <button className="ghost" onClick={() => setForm(null)}>Annulla</button>
           <button onClick={() => { (form.nuova ? onNew : onSave)({ scena: form.scena.trim(), scena_voto: form.voto }); setForm(null); }} disabled={!form.scena.trim()}>{form.nuova ? 'Inizia la scena' : 'Salva'}</button>
@@ -358,7 +357,6 @@ function Log({ rolls, uid, me, act }) {
       {closing !== null && <div className="form">
         <b>Chiudi la sessione</b>
         <label>Titolo<input value={closing} maxLength={80} onChange={(e) => setClosing(e.target.value)} /></label>
-        <p className="muted small-text">Il registro di questa sessione finisce nel Diario, diviso per scena, con tiri e avanzamenti. Qui il registro riparte vuoto.</p>
         <div className="actions"><button className="ghost" onClick={() => setClosing(null)}>Annulla</button>
           <button disabled={!closing.trim()} onClick={() => { act.closeSession(closing.trim()); setClosing(null); }}>Chiudi sessione</button></div>
       </div>}
@@ -434,7 +432,7 @@ export function Oracolo({ rolls, me, act }) {
       <section>
         <h2 className="section-title">Tabelle</h2>
         <div className="row">{Object.keys(TABLES).map((name) => (
-          <span key={name} className="with-info"><button className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
+          <span key={name} className="with-info rect"><button className="ghost small" disabled={!me} onClick={() => act.save(name, { kind: 'table', name, ...TABLES[name](d) })}>{name}</button>
             <Info title={name}>{TABLE_INFO[name].map(([col, rows]) => <div key={col} className="stack"><p className="label">{col}</p><ol className="info-list">{rows.map((r) => <li key={r}>{r}</li>)}</ol></div>)}</Info></span>
         ))}</div>
         {lastTable && (
@@ -444,7 +442,6 @@ export function Oracolo({ rolls, me, act }) {
               : <div><p className="muted small-text">{lastTable.player_name} · {lastTable.result.name} · {lastTable.result.dice}</p><p>{lastTable.result.text}</p></div>}
           </div>
         )}
-        <p className="muted small-text">Le tabelle vengono dal Google Doc. Ogni risultato finisce anche nel registro, visibile a tutti.</p>
       </section>
     </div>
   );
