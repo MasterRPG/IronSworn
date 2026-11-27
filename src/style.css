@@ -47,3 +47,9 @@ label.inline { justify-content: flex-start; margin: 0; }
 .clock button { width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 2px solid var(--muted); background: transparent; }
 .clock button.on { background: var(--miss); border-color: var(--miss); }
 button:disabled { opacity: .5; cursor: not-allowed; }
+.login { max-width: 360px; }
+.setpw { position: relative; }
+.setpw summary { cursor: pointer; color: var(--muted); text-decoration: underline; list-style: none; }
+.setpw form { position: absolute; right: 0; z-index: 1; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px; width: 260px; display: flex; flex-wrap: wrap; gap: 6px; }
+.setpw form input { flex: 1; min-width: 0; }
+.setpw form p { margin: 0; flex-basis: 100%; font-size: .9em; }

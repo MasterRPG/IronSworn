@@ -28,7 +28,7 @@ Per attivarla su un progetto già in linea: nel SQL Editor esegui `supabase/002_
 3. **GitHub Pages.** *Settings → Pages → Source: GitHub Actions*. A ogni modifica su `main` il sito si aggiorna da solo,
    all'indirizzo `https://masterrpg.github.io/IronSworn/`.
 
-Ognuno entra con la sua email: arriva un link, e si è dentro.
+Ognuno entra la prima volta con la sua email (arriva un link), poi imposta una password da "Password" in alto e da lì entra con email e password.
 
 ## Sviluppo
 

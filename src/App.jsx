@@ -23,24 +23,53 @@ export default function App() {
   return <Table session={session} />;
 }
 
+// Con la password si entra subito; senza, arriva il link via email (il piano gratuito ne manda poche all'ora).
 function Login() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [state, setState] = useState('');
   const send = async (e) => {
     e.preventDefault();
-    setState('invio…');
+    setState('un attimo…');
+    if (password) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return setState(error ? 'Email o password sbagliate. Se non hai ancora una password, lascia il campo vuoto e ricevi il link.' : '');
+    }
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: location.href } });
-    setState(error ? `Errore: ${error.message}` : 'Controlla la posta: ti ho mandato il link per entrare.');
+    setState(error ? `Errore: ${error.message}` : 'Controlla la posta: ti ho mandato il link per entrare. Una volta dentro, imposta una password.');
   };
   return (
     <main>
       <h1>Ironsworn</h1>
-      <form onSubmit={send}>
-        <label>Email <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+      <form onSubmit={send} className="login">
+        <label>Email <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+        <label>Password <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="vuota = link via email" /></label>
         <button>Entra</button>
       </form>
       <p role="status">{state}</p>
     </main>
+  );
+}
+
+function SetPassword() {
+  const [password, setPassword] = useState('');
+  const [state, setState] = useState('');
+  const save = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.updateUser({ password });
+    setState(error ? `Errore: ${error.message}` : 'Fatto: la prossima volta entri con email e password.');
+    if (!error) setPassword('');
+  };
+  return (
+    <details className="setpw">
+      <summary>Password</summary>
+      <form onSubmit={save}>
+        <input type="password" autoComplete="new-password" minLength={6} required value={password} aria-label="Nuova password"
+          placeholder="nuova password" onChange={(e) => setPassword(e.target.value)} />
+        <button>Salva</button>
+        <p role="status">{state}</p>
+      </form>
+    </details>
   );
 }
 
@@ -111,6 +140,7 @@ function Table({ session }) {
           <option value="" disabled>scegli…</option>
           {chars.map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>
         <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveScorte(clamp(e.target.value, LIMITS.scorte))} /></label>
+        <SetPassword />
         <button className="link" onClick={() => supabase.auth.signOut()}>Esci</button>
       </header>
       {error && <p role="alert" className="error">{error}</p>}
