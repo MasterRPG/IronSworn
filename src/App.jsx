@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { actionRoll, progressRoll, oracle, rollDice, ODDS, OUTCOMES } from './rules/dice.js';
 import { ACTION_MOVES, STATS } from './rules/moves.js';
 import { LIMITS, clamp, effectiveStats, emptyCharacter } from './rules/character.js';
-import Sheet from './Sheet.jsx';
+import Sheet, { Text } from './Sheet.jsx';
+import Tracks from './Tracks.jsx';
+import { completeClocks, markProgress } from './rules/progress.js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -63,7 +65,8 @@ function useLive(table, query, setError) {
   useEffect(() => {
     query(supabase.from(table).select('*')).then(({ data, error }) => (error ? setError(error.message) : setRows(data)));
     const channel = supabase.channel(table)
-      .on('postgres_changes', { event: '*', schema: 'public', table }, ({ new: row }) => setRows((rs) => upsert(rs, { ...row, fresh: true })))
+      .on('postgres_changes', { event: '*', schema: 'public', table }, ({ eventType, new: row, old }) =>
+        setRows((rs) => (eventType === 'DELETE' ? rs.filter((r) => r.id !== old.id) : upsert(rs, { ...row, fresh: true }))))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [table]);
@@ -76,9 +79,13 @@ function Table({ session }) {
   const [rolls, setRolls] = useLive('rolls', (q) => q.order('id', { ascending: false }).limit(100), setError);
   const [chars, setChars] = useLive('characters', (q) => q.order('id'), setError);
   const [party, setParty] = useLive('party', (q) => q, setError);
+  const [tracks, setTracks] = useLive('tracks', (q) => q.order('id'), setError);
+  const [tab, setTab] = useState('tavolo');
+  const scene = party[0] ?? { id: 1, scorte: 5, scena: '', scena_voto: null };
+  const sceneVow = tracks.find((t) => t.id === scene.scena_voto);
   const uid = session.user.id;
   const me = chars.find((c) => c.owner === uid);
-  const scorte = party[0]?.scorte ?? 5;
+  const scorte = scene.scorte;
 
   // Scegliere un personaggio libero lo rende tuo; "cambia" lo lascia libero.
   const setOwner = async (id, owner) => {
@@ -98,10 +105,29 @@ function Table({ session }) {
     if (error) return setError(error.message);
     setChars((cs) => upsert(cs, data));
   };
-  const saveScorte = async (v) => {
-    setParty([{ id: 1, scorte: v }]);
-    const { error } = await supabase.from('party').update({ scorte: v }).eq('id', 1);
+  const saveParty = async (patch) => {
+    setParty([{ ...scene, ...patch }]);
+    const { error } = await supabase.from('party').update(patch).eq('id', 1);
     if (error) setError(error.message);
+  };
+  const saveTrack = async (id, patch) => {
+    setTracks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    const { error } = await supabase.from('tracks').update(patch).eq('id', id);
+    if (error) setError(error.message);
+  };
+  const createTrack = async (row) => {
+    const { data, error } = await supabase.from('tracks').insert(row).select().single();
+    if (error) return setError(error.message);
+    setTracks((ts) => [...ts.filter((t) => t.id !== data.id), data]);
+  };
+  const deleteTrack = async (id) => {
+    setTracks((ts) => ts.filter((t) => t.id !== id));
+    const { error } = await supabase.from('tracks').delete().eq('id', id);
+    if (error) setError(error.message);
+  };
+  const finish = (t) => {
+    save(`Portare a termine: ${t.nome}`, { ...progressRoll({ clocks: completeClocks(t.segmenti) }, rollDice.progress()), trackId: t.id });
+    setTab('tavolo');
   };
 
   // shortcut: i dadi si tirano nel browser di chi tira; spostarli sul server se tra voi serve garanzia contro i trucchi.
@@ -119,6 +145,7 @@ function Table({ session }) {
 
   const burned = new Set(rolls.filter((r) => r.result.kind === 'burn').map((r) => r.result.of));
   // Lo slancio si brucia solo subito dopo il tiro: quindi solo sull'ultimo tiro proprio.
+  const [dismissed, setDismissed] = useState(new Set());
   const lastMine = rolls.find((r) => r.user_id === session.user.id && r.result.kind !== 'burn')?.id;
 
   return (
@@ -130,24 +157,47 @@ function Table({ session }) {
           : <label>Sono <select value="" onChange={(e) => setOwner(Number(e.target.value), uid)}>
               <option value="" disabled>scegli…</option>
               {chars.filter((c) => !c.owner).map((c) => <option key={c.id} value={c.id}>{c.data.nome}</option>)}</select></label>}
-        <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveScorte(clamp(e.target.value, LIMITS.scorte))} /></label>
+        <label>Scorte del gruppo <input type="number" min={0} max={5} value={scorte} onChange={(e) => saveParty({ scorte: clamp(e.target.value, LIMITS.scorte) })} /></label>
         <button className="link" onClick={() => supabase.auth.signOut()}>Esci</button>
       </header>
       {error && <p role="alert" className="error">{error}</p>}
-      <div className="panels">
-        <ActionPanel me={me} scorte={scorte} onRoll={save} />
-        <ProgressPanel onRoll={save} />
-        <OraclePanel onRoll={save} />
-      </div>
-      <h2>Registro</h2>
-      <ol className="log">
-        {rolls.slice(0, 20).map((r) => (
-          <LogEntry key={r.id} row={r} canBurn={r.id === lastMine && !burned.has(r.id)} onBurn={() => burn(r)} />
+      <nav className="tabs">
+        {[['tavolo', 'Tavolo'], ['voti', 'Voti e tracciati'], ['schede', 'Schede']].map(([k, label]) => (
+          <button key={k} className={tab === k ? 'active' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{label}</button>
         ))}
-      </ol>
-      <h2>Schede</h2>
-      {chars.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
-      <button className="link" onClick={addChar}>+ nuovo personaggio</button>
+      </nav>
+      {tab === 'tavolo' && <>
+        <div className="scene">
+          <label>Scena <Text value={scene.scena ?? ''} placeholder="un luogo, un momento, una cosa da fare" onSave={(scena) => saveParty({ scena })} /></label>
+          <label>Voto <select value={scene.scena_voto ?? ''} onChange={(e) => saveParty({ scena_voto: e.target.value ? Number(e.target.value) : null })}>
+            <option value="">nessuno</option>
+            {tracks.filter((t) => t.tipo === 'voto' && !t.chiuso).map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}</select></label>
+        </div>
+        <div className="panels">
+          <ActionPanel me={me} scorte={scorte} onRoll={save} />
+          <OraclePanel onRoll={save} />
+        </div>
+        <h2>Registro</h2>
+        <ol className="log">
+          {rolls.slice(0, 20).map((r) => {
+            const last = r.id === lastMine;
+            // Nella scena di un voto: fallimento -> avanza la minaccia, successo pieno -> tappa. Sempre su conferma.
+            const offers = last && sceneVow && r.result.kind === 'action' && !dismissed.has(r.id) ? [
+              r.result.outcome === 'miss' && sceneVow.minaccia !== null && sceneVow.minaccia_segmenti < 6 &&
+                { label: `+1 minaccia (${sceneVow.minaccia || sceneVow.nome})`, run: () => saveTrack(sceneVow.id, { minaccia_segmenti: sceneVow.minaccia_segmenti + 1 }) },
+              r.result.outcome === 'strong' &&
+                { label: `Raggiungere una tappa (${sceneVow.nome})`, run: () => saveTrack(sceneVow.id, { segmenti: markProgress(sceneVow.segmenti, sceneVow.grado) }) },
+            ].filter(Boolean) : [];
+            return <LogEntry key={r.id} row={r} canBurn={last && !burned.has(r.id)} onBurn={() => burn(r)}
+              offers={offers} onOffer={(o) => { if (o) o.run(); setDismissed(new Set(dismissed).add(r.id)); }} />;
+          })}
+        </ol>
+      </>}
+      {tab === 'voti' && <Tracks tracks={tracks} chars={chars} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
+      {tab === 'schede' && <>
+        {chars.map((c) => <Sheet key={c.id} c={c.data} readOnly={c.owner !== uid} onChange={(data) => saveChar(c.id, data)} />)}
+        <button className="link" onClick={addChar}>+ nuovo personaggio</button>
+      </>}
     </main>
   );
 }
@@ -181,19 +231,6 @@ function ActionPanel({ me, scorte, onRoll }) {
   );
 }
 
-function ProgressPanel({ onRoll }) {
-  const [what, setWhat] = useState('');
-  const [clocks, setClocks] = useState(0);
-  return (
-    <section>
-      <h2>Portare a termine</h2>
-      <label>Cosa <input value={what} placeholder="voto, viaggio o scontro" onChange={(e) => setWhat(e.target.value)} /></label>
-      <label>Orologi completi <input type="number" min={0} max={10} value={clocks} onChange={num(setClocks)} /></label>
-      <button onClick={() => onRoll(`Portare a termine${what ? `: ${what}` : ''}`, progressRoll({ clocks }, rollDice.progress()))}>Tira</button>
-    </section>
-  );
-}
-
 function OraclePanel({ onRoll }) {
   const [question, setQuestion] = useState('');
   const [odds, setOdds] = useState('cinquanta');
@@ -211,7 +248,7 @@ function OraclePanel({ onRoll }) {
 // Un tiro appena arrivato mostra i dadi che rotolano per un attimo, per tutti al tavolo.
 const SUSPENSE_MS = 1500;
 
-function LogEntry({ row, canBurn, onBurn }) {
+function LogEntry({ row, canBurn, onBurn, offers = [], onOffer }) {
   const r = row.result;
   const [rolling, setRolling] = useState(() => row.fresh && r.kind !== 'burn');
   useEffect(() => {
@@ -234,6 +271,8 @@ function LogEntry({ row, canBurn, onBurn }) {
     <li className={r.outcome}>
       {who}: {detail} contro {r.c1} e {r.c2} → <b>{OUTCOMES[r.outcome]}</b>{match}
       {r.burn && canBurn && <button className="small" onClick={onBurn}>Brucia lo slancio ({OUTCOMES[r.burn.outcome]})</button>}
+      {offers.map((o) => <button key={o.label} className="small" onClick={() => onOffer(o)}>{o.label}</button>)}
+      {offers.length > 0 && <button className="small link" onClick={() => onOffer(null)}>no</button>}
     </li>
   );
 }

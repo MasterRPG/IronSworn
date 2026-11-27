@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/rules/dice.test.js src/rules/character.test.js"
+    "test": "node --test src/rules/dice.test.js src/rules/character.test.js src/rules/progress.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.2",

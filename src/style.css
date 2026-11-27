@@ -60,3 +60,27 @@ fieldset.sheet-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .legame { display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; align-items: center; margin: 6px 0; }
 .legame textarea { grid-column: 1 / -1; }
 fieldset:disabled .link, fieldset:disabled .clock button, fieldset:disabled .track button { cursor: default; }
+.tabs { display: flex; gap: 4px; margin: 16px 0 8px; border-bottom: 1px solid var(--line); }
+.tabs button { background: none; color: var(--muted); border-radius: 6px 6px 0 0; }
+.tabs button.active { color: var(--fg); border-bottom: 3px solid var(--fg); font-weight: 600; }
+.scene { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .scene { grid-template-columns: 1fr; } }
+.scene input, .scene select { flex: 1; min-width: 0; }
+.tracks { display: grid; gap: 12px; }
+.track-card, .new-track { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.new-track h3 { margin: 0 0 4px; }
+.new-track input, .new-track select { flex: 1; min-width: 0; }
+.track-card.closed { opacity: .65; }
+.track-card header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.track-name { flex: 1; min-width: 12em; font-weight: 600; }
+.track-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.track-row label { flex: 1; min-width: 14em; margin: 0; }
+.track-row label input { flex: 1; min-width: 0; }
+.small-actions { justify-content: flex-end; }
+.progress { display: inline-flex; gap: 3px; }
+.pclock { width: 22px; height: 22px; border-radius: 4px; border: 2px solid var(--muted);
+  background: conic-gradient(var(--strong) 0 var(--p), transparent var(--p) 100%); position: relative; }
+.pclock::after { content: ''; position: absolute; inset: 0; background:
+  linear-gradient(var(--muted), var(--muted)) center / 1px 100% no-repeat, linear-gradient(var(--muted), var(--muted)) center / 100% 1px no-repeat; opacity: .5; }
+.threat button.on { background: var(--weak); border-color: var(--weak); }
+.pos.difficolta { background: var(--miss); }

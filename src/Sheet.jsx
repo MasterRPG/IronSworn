@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ASSET_TYPES, LIMITS, RANKS, clamp, effectiveStats } from './rules/character.js';
+import { ASSET_TYPES, LIMITS, clamp, effectiveStats } from './rules/character.js';
 
 // Campo di testo che salva quando lo lasci, non a ogni tasto.
-function Text({ value, onSave, area, ...rest }) {
+export function Text({ value, onSave, area, ...rest }) {
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   const Tag = area ? 'textarea' : 'input';
@@ -103,10 +103,7 @@ export default function Sheet({ c, readOnly, onChange }) {
           ))}
           <button type="button" className="link" onClick={() => set({ legami: [...legami, { con: '', testo: '' }] })}>+ legame</button>
           <h4>Voto personale</h4>
-          <Text area rows={2} value={c.voto.testo} onSave={(testo) => set({ voto: { ...c.voto, testo } })} />
-          <label>Grado <select value={c.voto.grado} onChange={(e) => set({ voto: { ...c.voto, grado: e.target.value } })}>
-            {RANKS.map((r) => <option key={r}>{r}</option>)}</select></label>
-          <label>Giurato su <Text value={c.voto.ferro} onSave={(ferro) => set({ voto: { ...c.voto, ferro } })} /></label>
+          <p className="muted">I voti, personali e di gruppo, con tracciato e minaccia sono in "Voti e tracciati".</p>
         </div>
         <div className="wide">
           <h4>Asset</h4>
