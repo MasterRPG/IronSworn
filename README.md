@@ -40,6 +40,13 @@ Regola della casa: chi fa la mossa tira il d6 (o, per Portare a termine, conta g
 
 Per attivarla: nel SQL Editor esegui `supabase/007_sfida.sql`.
 
+## Note e racconto
+
+- Scheda *Note*: pagine condivise (titolo e testo), che chiunque può creare, modificare ed eliminare. Sono già importati il tab Luoghi (pagina "Oxenfurt") e il tab Minacce ("Minacce dal foglio": le due minacce vanno collegate a mano a un voto).
+- Nel *Tavolo*, "Racconta in una riga cosa succede…" aggiunge una riga di racconto al registro, tra i tiri.
+
+Per attivarla: esegui `supabase/008_note.sql` nel SQL Editor.
+
 ## Messa in linea (una volta sola)
 
 1. **Supabase.** Crea un account e un progetto gratuito su supabase.com.
