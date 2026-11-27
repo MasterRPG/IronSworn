@@ -12,4 +12,4 @@ jobs:
         run: |
           psql "$DB" -c "select id, data->>'nome' as nome, data->>'giocatore' as giocatore, owner is not null as ha_proprietario, data->>'archiviato' as archiviato, jsonb_array_length(coalesce(data->'asset','[]')) as asset, jsonb_array_length(coalesce(data->'legami','[]')) as legami, length(data::text) as dimensione, updated_at from public.characters order by id"
           psql "$DB" -c "select nome from public._migrazioni order by 1"
-          psql "$DB" -c "select count(*) as utenti from auth.users"
+          psql "$DB" -c "select nome, personaggio from public.tracks order by id"
