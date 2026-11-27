@@ -28,6 +28,8 @@ export default function App() {
 
 // Si entra con un nome e la password comune del gruppo. Supabase vuole un'email: la ricaviamo dal nome.
 // shortcut: chi conosce la password può entrare con qualunque nome; dopo aver creato gli account, chiudere le iscrizioni su Supabase.
+// Matteo è l'amministratore: modifica tutte le schede e solo lui archivia (stessa regola in supabase/012_admin.sql).
+const ADMIN_EMAIL = 'matteo@ironsworn.example.com';
 const emailOf = (nome) => `${nome.trim().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '')}@ironsworn.example.com`;
 
 function Login() {
@@ -203,19 +205,20 @@ function Table({ session }) {
       {tab === 'oracolo' && <Oracolo rolls={rolls} me={me} act={act} />}
       {tab === 'voti' && <Tracks tracks={tracks} chars={chars} me={me} scene={scene} onSave={saveTrack} onCreate={createTrack} onDelete={deleteTrack} onFinish={finish} />}
       {tab === 'note' && <Pages pages={pages} tracks={tracks} onTrack={saveTrack} onNewVow={() => setTab('voti')} onSave={savePage} onCreate={createPage} onDelete={deletePage} />}
-      {tab === 'schede' && <Schede chars={chars} uid={uid} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
+      {tab === 'schede' && <Schede chars={chars} uid={uid} admin={session.user.email === ADMIN_EMAIL} me={me} tracks={tracks} onSave={saveChar} onAdd={addChar} />}
     </main>
   );
 }
 
 // Una scheda alla volta, con le linguette dei personaggi; gli archiviati in fondo.
-function Schede({ chars, uid, me, tracks, onSave, onAdd }) {
+function Schede({ chars, uid, admin, me, tracks, onSave, onAdd }) {
   const [sel, setSel] = useState(me?.id ?? chars[0]?.id);
   const c = chars.find((x) => x.id === sel) ?? chars[0];
   const live = chars.filter((x) => !x.data.archiviato);
   const gone = chars.filter((x) => x.data.archiviato);
   const vow = c && tracks.find((t) => t.tipo === 'voto' && t.personaggio === c.id && !t.chiuso);
   const mine = c?.owner === uid;
+  const ed = mine || admin;
   return (
     <div className="page">
       <div className="row">
@@ -224,10 +227,10 @@ function Schede({ chars, uid, me, tracks, onSave, onAdd }) {
         {gone.length > 0 && <select aria-label="Archiviati" value="" onChange={(e) => setSel(Number(e.target.value))}>
           <option value="" disabled>Archiviati ({gone.length})</option>
           {gone.map((x) => <option key={x.id} value={x.id}>{x.data.nome}</option>)}</select>}
-        {c && <span className="muted small-text push">{mine ? 'È il tuo personaggio: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
+        {c && <span className="muted small-text push">{mine ? 'È il tuo personaggio: puoi modificarlo.' : admin ? 'Sei l\'amministratore: puoi modificarlo.' : 'Solo chi gioca questo personaggio può modificarne la scheda.'}</span>}
       </div>
-      {c && <Sheet key={c.id} c={c.data} readOnly={!mine || !!c.data.archiviato} vow={vow} onChange={(data) => onSave(c.id, data)} onArchive={() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) })} />}
-      {c?.data.archiviato && mine && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>}
+      {c && <Sheet key={c.id} c={c.data} readOnly={!ed || !!c.data.archiviato} vow={vow} onChange={(data) => onSave(c.id, data)} onArchive={admin && (() => onSave(c.id, { ...c.data, archiviato: new Date().toISOString().slice(0, 10) }))} />}
+      {c?.data.archiviato && admin && <button className="link" onClick={() => confirm(`Riportare in gioco ${c.data.nome}?`) && onSave(c.id, { ...c.data, archiviato: undefined })}>Riporta in gioco</button>}
     </div>
   );
 }
